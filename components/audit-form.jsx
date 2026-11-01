@@ -61,7 +61,7 @@ export function AuditForm() {
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? "store-url-error" : undefined}
           disabled={pending}
-          className="h-11 px-3.5 text-base md:text-base"
+          className="h-11 bg-card px-3.5 text-base md:text-base"
         />
         <Button
           type="submit"

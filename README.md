@@ -1,4 +1,4 @@
-# Shopify AI Growth Audit
+# GrowthLens
 
 Enter a Shopify store URL and get a scored audit of AI opportunities across
 product copy, search, support, recommendations and email/retention.
@@ -40,7 +40,7 @@ npm run crawl -- rothys.com --no-pagespeed      # skip the slow PageSpeed runs
 ```
 
 The crawler only reads public storefront data, sends at most 3 requests at a
-time, and identifies itself as `ShopifyAIAuditBot`. Stores behind bot
+time, and identifies itself as `GrowthLensBot`. Stores behind bot
 protection (Cloudflare challenges) are reported as blocked rather than
 crawled. PageSpeed works without `PAGESPEED_API_KEY` but has a low shared
 quota; set a key for regular use.

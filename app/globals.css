@@ -5,6 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-ink: var(--ink);
+  --color-growth: var(--growth);
+  --color-signal: var(--signal);
+  --color-paper: var(--paper);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -49,24 +53,34 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* GrowthLens brand palette */
+  --ink: #11211b;
+  --growth: #1a7f47;
+  --signal: #2bc06d;
+  --paper: #f6f8f5;
+
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: #ffffff;
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  /* White on Growth is 5.0:1. */
+  --primary: var(--growth);
+  --primary-foreground: #ffffff;
+  --secondary: #eef1ef;
+  --secondary-foreground: var(--ink);
+  --muted: #eef1ef;
+  --muted-foreground: #4a5a52;
+  --accent: #eef1ef;
+  --accent-foreground: var(--ink);
+  /* One step darker than shadcn's red: that one is 4.47:1 on Paper. */
+  --destructive: oklch(0.505 0.213 27.518);
+  --border: #dce3de;
+  --input: #dce3de;
+  /* Ink, not Growth: at the 50% alpha shadcn uses for rings, Growth fades
+     to 2:1 against Paper; Ink stays above 3:1. */
+  --ring: var(--ink);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
