@@ -33,7 +33,7 @@ describe("buildRoadmap", () => {
     { id: "e", impact: 2, effort: 1 },
   ];
 
-  it("groups by phase, best impact-to-effort first", () => {
+  it("groups by phase, highest impact first", () => {
     const roadmap = buildRoadmap(items);
     expect(roadmap.map((p) => p.label)).toEqual([
       "0–30 days",
@@ -62,20 +62,42 @@ describe("buildRoadmap", () => {
 });
 
 describe("seedOpportunities", () => {
-  it("drafts one opportunity per failed scored check", () => {
-    const checks = runChecks(weakStore);
-    const seeds = seedOpportunities(checks);
-    const failedScored = checks.filter(
-      (c) => c.passed === false && c.area !== "performance",
-    );
-    expect(seeds.map((s) => s.id)).toEqual(failedScored.map((c) => c.id));
-    expect(seeds[0]).toEqual({
-      id: "copy.thin-descriptions",
-      area: "copy",
-      title: "Write fuller product descriptions with AI",
+  it("drafts one opportunity per fix, highest impact first", () => {
+    const seeds = seedOpportunities(runChecks(weakStore));
+    expect(seeds.map((s) => [s.id, s.impact, s.effort])).toEqual([
+      ["email-flows", 5, 3],
+      ["product-copy", 4, 2],
+      ["recommendations", 4, 2],
+      ["ai-search", 4, 3],
+      ["support-chat", 4, 3],
+      ["email-capture", 3, 1],
+      ["faq-page", 3, 1],
+      ["seo-meta", 3, 1],
+      ["structured-data", 3, 2],
+      ["alt-text", 2, 1],
+    ]);
+  });
+
+  it("groups related failed checks and takes their highest impact and effort", () => {
+    const seeds = seedOpportunities(runChecks(weakStore));
+    expect(seeds.find((s) => s.id === "ai-search")).toEqual({
+      id: "ai-search",
+      area: "search",
+      title: "Add AI-powered site search",
       impact: 4,
-      effort: 2,
-      evidenceRefs: ["copy.thin-descriptions"],
+      effort: 3,
+      evidenceRefs: ["search.typo-tolerance", "search.synonyms", "search.app"],
     });
+  });
+
+  it("scores a fix only by the checks that actually failed", () => {
+    const checks = [
+      { id: "search.typo-tolerance", area: "search", passed: true },
+      { id: "search.synonyms", area: "search", passed: null },
+      { id: "search.app", area: "search", passed: false },
+    ];
+    expect(seedOpportunities(checks)).toMatchObject([
+      { id: "ai-search", impact: 3, effort: 3, evidenceRefs: ["search.app"] },
+    ]);
   });
 });
