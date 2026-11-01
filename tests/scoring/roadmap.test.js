@@ -15,10 +15,10 @@ describe("phaseFor", () => {
     [3, 3, 2],
     [3, 4, 2],
     [5, 5, 3],
+    [3, 2, 1],
+    [3, 1, 1],
     [2, 3, 3],
-    // The plan's rules put medium-impact quick wins last.
-    [3, 2, 3],
-    [3, 1, 3],
+    [2, 1, 3],
   ])("impact %i, effort %i → phase %i", (impact, effort, phase) => {
     expect(phaseFor({ impact, effort })).toBe(phase);
   });

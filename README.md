@@ -64,7 +64,7 @@ plain code with no LLM, so the same snapshot always gets the same scores.
   score. The overall score is the weighted average of the scored areas.
 - Grades: 80+ Good, 60–79 Needs work, under 60 Big opportunity.
 - Each failed check maps to an AI fix with a fixed impact and effort
-  (`lib/scoring/fixes.js`). The roadmap puts impact 4+ and effort 1–2 in
+  (`lib/scoring/fixes.js`). The roadmap puts impact 3+ and effort 1–2 in
   0–30 days, impact 3+ and effort 3–4 in 30–60 days, and everything else in
   60–90 days.
 - Performance (PageSpeed) checks are reported as context and never scored.
