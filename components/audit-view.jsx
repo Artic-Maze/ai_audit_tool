@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CircleAlert, CircleCheck, Circle, LoaderCircle } from "lucide-react";
+import { Report } from "@/components/report/report";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { isFinished, STAGES } from "@/lib/jobs/state";
-import { gradeLabel } from "@/lib/scoring/score";
+import { cn } from "@/lib/utils";
 
 const POLL_MS = 2000;
 const STEPS = STAGES.filter((s) => s.id !== "queued" && s.id !== "done");
@@ -96,57 +97,7 @@ function Failed({ audit }) {
   );
 }
 
-// Interim results until the full report page lands.
-function Result({ audit }) {
-  const { store, scores, summary, opportunities } = audit.report;
-  const { score, grade } = scores.overall;
-  return (
-    <>
-      <p className="text-sm font-bold tracking-[0.08em] text-muted-foreground uppercase">
-        Audit report
-      </p>
-      <h1 className="mt-2 text-3xl font-extrabold tracking-[-0.02em] break-words sm:text-4xl">
-        {store.name ?? store.domain}
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">{store.domain}</p>
-
-      <p className="mt-6 flex items-baseline gap-3">
-        <span className="text-5xl font-extrabold tracking-[-0.02em]">
-          {score ?? "–"}
-          <span className="text-xl text-muted-foreground">/100</span>
-        </span>
-        <span className="font-bold text-growth">{gradeLabel(grade)}</span>
-      </p>
-      <p className="mt-4 text-pretty">{summary.text}</p>
-
-      {opportunities.length > 0 && (
-        <>
-          <h2 className="mt-10 text-xl font-extrabold tracking-[-0.02em]">
-            Top opportunities
-          </h2>
-          <ol className="mt-4 space-y-3">
-            {opportunities.map((o) => (
-              <li key={o.id} className="rounded-xl border bg-card p-4">
-                <h3 className="font-bold">{o.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {o.finding}
-                </p>
-                {o.estLift && (
-                  <p className="mt-2 text-sm">
-                    <span className="font-medium">Estimated lift:</span>{" "}
-                    {o.estLift}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ol>
-        </>
-      )}
-    </>
-  );
-}
-
-export function AuditView({ initial }) {
+export function AuditView({ initial, bookingUrl }) {
   const [audit, setAudit] = useState(initial);
   const [connectionLost, setConnectionLost] = useState(false);
   const finished = isFinished(audit.status);
@@ -186,9 +137,14 @@ export function AuditView({ initial }) {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-8 pb-16 sm:px-6 sm:pt-12">
+      <main
+        className={cn(
+          "mx-auto w-full flex-1 px-4 pt-8 pb-16 sm:px-6 sm:pt-12",
+          audit.status === "done" ? "max-w-5xl" : "max-w-2xl",
+        )}
+      >
         {audit.status === "done" ? (
-          <Result audit={audit} />
+          <Report audit={audit} bookingUrl={bookingUrl} onUnlocked={setAudit} />
         ) : audit.status === "failed" ? (
           <Failed audit={audit} />
         ) : (
