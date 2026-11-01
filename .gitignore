@@ -36,3 +36,6 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# crawler output
+/snapshot*.json

@@ -28,3 +28,19 @@ npm run dev                # http://localhost:3000
 | `npm run format:check` | Prettier (checks only)               |
 | `npm run db:migrate`   | Create and apply a Prisma migration  |
 | `npm run db:studio`    | Browse the database in Prisma Studio |
+| `npm run crawl -- URL` | Crawl a store into `snapshot.json`   |
+
+### Crawler
+
+```bash
+npm run crawl -- colourpop.com                  # writes snapshot.json
+npm run crawl -- colourpop.com --out cp.json    # custom output path
+npm run crawl -- rothys.com --no-products-json  # force the sitemap fallback
+npm run crawl -- rothys.com --no-pagespeed      # skip the slow PageSpeed runs
+```
+
+The crawler only reads public storefront data, sends at most 3 requests at a
+time, and identifies itself as `ShopifyAIAuditBot`. Stores behind bot
+protection (Cloudflare challenges) are reported as blocked rather than
+crawled. PageSpeed works without `PAGESPEED_API_KEY` but has a low shared
+quota; set a key for regular use.
