@@ -100,6 +100,7 @@ progress until the report is ready.
 | --------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `POST /api/audit`     | Body `{"url": "store.com"}`. Starts an audit (202) or returns a reusable one (200) as `{ id, status, reused }`. |
 | `GET /api/audit/[id]` | Status, stage, progress and message; the report once `status` is `done`. The crawl snapshot stays server-side.  |
+| `POST /api/lead`      | Body `{"auditId": "…", "email": "…"}`. Saves the lead and unlocks the full report for that browser.             |
 
 - Audits run in the app process, up to 3 at a time (the rest wait as
   `queued`), and write their stage to the `Audit` row as they go.
@@ -108,3 +109,19 @@ progress until the report is ready.
 - Audits interrupted by a restart or deploy are marked failed when the next
   process starts, and any audit with no progress for 15 minutes is marked
   failed when polled. This assumes a single app instance.
+
+### Report page and email gating
+
+`/audit/[id]` shows the progress steps, then the report: header with the
+overall score, executive summary, area scores, an impact vs. effort chart,
+opportunity cards, before/after product copy, a 90-day roadmap, page speed,
+and methodology and limitations.
+
+- Before the viewer gives their email, the page and the API include only the
+  header, the area scores and the top 3 opportunities. Locked sections are
+  placeholders; their content isn't sent to the browser at all.
+- Submitting the form calls `POST /api/lead`, which saves the lead and sets a
+  signed, HTTP-only cookie that unlocks that audit in that browser.
+- `UNLOCK_SECRET` signs the cookie (required in production). `BOOKING_URL`
+  sets the "Book a call" link at the end of the report; without it the
+  section is hidden.
