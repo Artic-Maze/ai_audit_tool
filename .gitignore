@@ -39,3 +39,4 @@ yarn-error.log*
 
 # crawler output
 /snapshot*.json
+/report*.json
