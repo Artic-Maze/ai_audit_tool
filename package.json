@@ -15,9 +15,11 @@
     "crawl": "node scripts/crawl.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "audit:dry": "node scripts/audit-dry.js"
+    "audit:dry": "node scripts/audit-dry.js",
+    "audit": "node scripts/audit.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "cheerio": "^1.2.0",

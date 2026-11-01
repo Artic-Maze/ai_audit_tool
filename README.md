@@ -19,18 +19,19 @@ npm run dev                # http://localhost:3000
 
 ## Scripts
 
-| Script                               | What it does                             |
-| ------------------------------------ | ---------------------------------------- |
-| `npm run dev`                        | Dev server                               |
-| `npm run build`                      | Production build                         |
-| `npm run lint`                       | ESLint                                   |
-| `npm run format`                     | Prettier (writes)                        |
-| `npm run format:check`               | Prettier (checks only)                   |
-| `npm run db:migrate`                 | Create and apply a Prisma migration      |
-| `npm run db:studio`                  | Browse the database in Prisma Studio     |
-| `npm run crawl -- URL`               | Crawl a store into `snapshot.json`       |
-| `npm run audit:dry -- snapshot.json` | Score a snapshot and print failed checks |
-| `npm test`                           | Run the Vitest suite                     |
+| Script                               | What it does                                   |
+| ------------------------------------ | ---------------------------------------------- |
+| `npm run dev`                        | Dev server                                     |
+| `npm run build`                      | Production build                               |
+| `npm run lint`                       | ESLint                                         |
+| `npm run format`                     | Prettier (writes)                              |
+| `npm run format:check`               | Prettier (checks only)                         |
+| `npm run db:migrate`                 | Create and apply a Prisma migration            |
+| `npm run db:studio`                  | Browse the database in Prisma Studio           |
+| `npm run crawl -- URL`               | Crawl a store into `snapshot.json`             |
+| `npm run audit:dry -- snapshot.json` | Score a snapshot and print failed checks       |
+| `npm run audit -- URL`               | Full audit with Claude, saved to `report.json` |
+| `npm test`                           | Run the Vitest suite                           |
 
 ### Crawler
 
@@ -68,3 +69,23 @@ plain code with no LLM, so the same snapshot always gets the same scores.
   0–30 days, impact 3+ and effort 3–4 in 30–60 days, and everything else in
   60–90 days.
 - Performance (PageSpeed) checks are reported as context and never scored.
+
+### Report writing (Claude)
+
+`npm run audit -- colourpop.com` runs the whole pipeline: crawl, checks and
+scores, then three Claude calls (`claude-sonnet-5-5`) that write the
+opportunity explanations, before/after rewrites of the two thinnest product
+descriptions, and an executive summary. The validated `AuditReport` is saved
+to `report.json`. Pass a snapshot instead of a URL to skip the crawl:
+`npm run audit -- snapshot.json`.
+
+- Code decides everything that's scored: which opportunities exist (one per
+  AI fix with a failed check), their impact and effort, their order (impact,
+  then effort) and roadmap phase. Claude only writes the prose around them.
+- Answers use structured outputs and are re-checked with zod plus extra rules:
+  every opportunity covered, lift given as a range, and no number that isn't
+  in the facts Claude was given. A rejected answer is retried once with the
+  problems listed; if it fails again, the report falls back to text built from
+  the checks, so it never breaks.
+- Requests opt into server-side refusal fallback (`fallbacks: "default"`).
+- Needs `ANTHROPIC_API_KEY`; `ANTHROPIC_MODEL` overrides the model.
