@@ -4,6 +4,7 @@ import { sum } from "../../lib/checks/format.js";
 import {
   AREA_WEIGHTS,
   CHECK_FIXES,
+  FIXES,
   CHECK_WEIGHTS,
   gradeFor,
   scoreAudit,
@@ -32,6 +33,8 @@ describe("weights", () => {
       .sort();
     expect(Object.keys(CHECK_WEIGHTS).sort()).toEqual(scored);
     expect(Object.keys(CHECK_FIXES).sort()).toEqual(scored);
+    for (const { fix } of Object.values(CHECK_FIXES))
+      expect(FIXES).toHaveProperty(fix);
   });
 
   it("belong to unique check ids", () => {

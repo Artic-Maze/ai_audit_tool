@@ -101,7 +101,9 @@ for (const c of checks.filter((check) => check.area === "performance")) {
   console.log(`  ${mark} ${c.title.padEnd(26)} ${detail}`);
 }
 
-console.log("\nRoadmap preview (default impact/effort for each failed check)");
+console.log(
+  "\nRoadmap preview (one opportunity per AI fix, before the LLM writes them up)",
+);
 for (const phase of roadmap) {
   console.log(`  ${phase.label}`);
   if (phase.items.length === 0) console.log("    –");
