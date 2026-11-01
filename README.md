@@ -89,3 +89,22 @@ to `report.json`. Pass a snapshot instead of a URL to skip the crawl:
   the checks, so it never breaks.
 - Requests opt into server-side refusal fallback (`fallbacks: "default"`).
 - Needs `ANTHROPIC_API_KEY`; `ANTHROPIC_MODEL` overrides the model.
+
+### Audit jobs and API
+
+Run `npm run dev` and submit a store on the landing page. The page posts to
+the API, which starts the audit in the background, and `/audit/[id]` polls for
+progress until the report is ready.
+
+| Endpoint              | What it does                                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `POST /api/audit`     | Body `{"url": "store.com"}`. Starts an audit (202) or returns a reusable one (200) as `{ id, status, reused }`. |
+| `GET /api/audit/[id]` | Status, stage, progress and message; the report once `status` is `done`. The crawl snapshot stays server-side.  |
+
+- Audits run in the app process, up to 3 at a time (the rest wait as
+  `queued`), and write their stage to the `Audit` row as they go.
+- A finished audit of the same store is reused for 24 hours, and so is one
+  that's still running. `www.` and bare domains count as the same store.
+- Audits interrupted by a restart or deploy are marked failed when the next
+  process starts, and any audit with no progress for 15 minutes is marked
+  failed when polled. This assumes a single app instance.

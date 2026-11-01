@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { FileText, Mail, MessageCircle, Search, Sparkles } from "lucide-react";
 import { AuditForm } from "@/components/audit-form";
-import { Logo } from "@/components/logo";
+import { SiteHeader } from "@/components/site-header";
 
 const AREAS = [
   {
@@ -49,11 +48,7 @@ const DELIVERABLES = [
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6">
-        <Link href="/" className="inline-flex rounded-lg">
-          <Logo size={32} />
-        </Link>
-      </header>
+      <SiteHeader />
 
       <main className="flex-1">
         <section className="mx-auto max-w-2xl px-4 pt-12 pb-16 text-center sm:px-6 sm:pt-20">
