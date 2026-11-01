@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Audit {
+  id        String   @id @default(cuid())
+  domain    String
+  status    String // queued | crawling | analyzing | done | failed
+  progress  Int      @default(0)
+  error     String?
+  snapshot  Json?
+  report    Json?
+  createdAt DateTime @default(now())
+
+  @@index([domain, createdAt])
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  email     String
+  auditId   String
+  createdAt DateTime @default(now())
+}
