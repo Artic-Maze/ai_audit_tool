@@ -12,7 +12,10 @@
     "format:check": "prettier --check .",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "crawl": "node scripts/crawl.js"
+    "crawl": "node scripts/crawl.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "audit:dry": "node scripts/audit-dry.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
@@ -41,7 +44,8 @@
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "prisma": "^7.10.1",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "vitest": "^5.0.5"
   },
   "type": "module"
 }
