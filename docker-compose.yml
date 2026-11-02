@@ -1,0 +1,32 @@
+services:
+  app:
+    build: .
+    container_name: growth-lens
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - proxy
+      - pg
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.growthlens.rule=Host(`growth-lens.articmaze.dev`)
+      - traefik.http.routers.growthlens.entrypoints=websecure
+      - traefik.http.routers.growthlens.tls.certresolver=le
+      - traefik.http.services.growthlens.loadbalancer.server.port=3000
+
+  # one-off migrations (Prisma). Run manually; never starts with `up`
+  migrate:
+    build:
+      context: .
+      target: builder
+    env_file: .env
+    command: npx prisma migrate deploy
+    networks:
+      - pg
+    profiles: ["tools"]
+
+networks:
+  proxy:
+    external: true
+  pg:
+    external: true

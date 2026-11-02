@@ -1,0 +1,11 @@
+.git
+.next
+node_modules
+coverage
+.env*
+snapshot*.json
+report*.json
+npm-debug.log*
+.DS_Store
+Dockerfile
+docker-compose.yml
