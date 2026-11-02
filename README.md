@@ -398,6 +398,7 @@ lib/
 prisma/                      schema and migrations
 scripts/                     crawl, audit:dry and audit CLIs
 tests/                       Vitest suites and synthetic fixture stores
+Dockerfile, docker-compose.yml
 ```
 
 Built with Next.js 15 (App Router, JavaScript), Tailwind CSS 4 with
@@ -447,6 +448,45 @@ long-running Node server rather than serverless functions. It also assumes
 one instance: when the server restarts, audits that were in progress are
 marked as interrupted.
 
+Set `DATABASE_URL`, `UNLOCK_SECRET`, `APP_URL`, `ANTHROPIC_API_KEY` and
+`PAGESPEED_API_KEY` in production. The app won't unlock reports without
+`UNLOCK_SECRET`.
+
+### Docker Compose behind Traefik
+
+`docker-compose.yml` runs the app behind an existing
+[Traefik](https://traefik.io/) proxy and connects it to an existing Postgres
+container. It expects:
+
+- two external Docker networks: `proxy`, which Traefik is on, and `pg`, which
+  Postgres is on
+- a Traefik entrypoint named `websecure` and a certificate resolver named `le`
+
+Change the domain in the `Host(...)` rule to your own. Then create `.env`
+from `.env.example` and set:
+
+- `APP_URL` to `https://` plus that domain
+- `DATABASE_URL` with the Postgres container's name as the host, e.g.
+  `postgresql://postgres:secret@postgres:5432/ai_audit_tool?schema=public`
+
+To deploy, apply any pending migrations, then build and start the app:
+
+```bash
+docker compose run --rm --build migrate
+docker compose up -d --build
+```
+
+Run both commands on every deploy. Without `--build`, `migrate` would use the
+migrations from its last build. It creates the database if it doesn't exist,
+which needs a Postgres user that is allowed to create databases. `migrate` is
+in the `tools` profile, so `up` never starts it. To follow the logs, run
+`docker compose logs -f app`.
+
+Without Traefik, change the networks and labels to suit your proxy. The app
+listens on port 3000.
+
+### Without Docker
+
 ```bash
 npm ci
 npx prisma migrate deploy
@@ -454,15 +494,10 @@ npm run build
 npm start
 ```
 
-Set `DATABASE_URL`, `UNLOCK_SECRET`, `APP_URL`, `ANTHROPIC_API_KEY` and
-`PAGESPEED_API_KEY` in production. The app won't unlock reports without
-`UNLOCK_SECRET`.
-
 ## Roadmap
 
 - [ ] PDF export of the full report
 - [ ] Rate limiting (5 audits per IP per hour)
-- [ ] Docker image and deployment guide
 - [ ] Public sample report
 
 ## Contributing
