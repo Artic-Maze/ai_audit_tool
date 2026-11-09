@@ -137,10 +137,90 @@ function poseFor({ mode, phase, vel, waving, look, kick, blink }) {
 // How fast each value eases toward its target, per second.
 const RATE = { eyes: 30, headYaw: 6, headPitch: 6, headRoll: 6, sit: 5 };
 
+// The drones: glossy silver orbs with a visor and glowing blue eyes. One has
+// a ring of light around it, the other a glowing band. Each is drawn on a
+// 44 × 44 box centred on its position.
+function OrbDefs({ id }) {
+  return (
+    <defs>
+      <radialGradient id={`${id}-shell`} cx="0.36" cy="0.3" r="0.75">
+        <stop offset="0" stopColor="#ffffff" />
+        <stop offset="0.35" stopColor="#c9d2de" />
+        <stop offset="0.8" stopColor="#5d6878" />
+        <stop offset="1" stopColor="#2b323d" />
+      </radialGradient>
+      <clipPath id={`${id}-clip`}>
+        <ellipse cx="22" cy="23" rx="13" ry="15" />
+      </clipPath>
+    </defs>
+  );
+}
+
+function Visor() {
+  return (
+    <>
+      <rect x="13" y="12" width="18" height="8" rx="4" fill="#0b1018" />
+      <rect x="15.5" y="14" width="4.5" height="3.2" rx="1.6" fill="#7cc8ff" />
+      <rect x="24" y="14" width="4.5" height="3.2" rx="1.6" fill="#7cc8ff" />
+    </>
+  );
+}
+
+function RingDrone() {
+  return (
+    <svg viewBox="0 0 44 44" width="44" height="44">
+      <OrbDefs id="ring-drone" />
+      <path
+        d="M2 25a20 5 0 0 1 40 0"
+        fill="none"
+        stroke="#9fe0ff"
+        strokeWidth="1.4"
+        opacity="0.7"
+      />
+      <ellipse cx="22" cy="23" rx="13" ry="15" fill="url(#ring-drone-shell)" />
+      <g clipPath="url(#ring-drone-clip)" fill="#1d232c" opacity="0.85">
+        <rect x="8" y="24" width="28" height="2.6" />
+        <rect x="8" y="29" width="28" height="2.6" />
+        <rect x="8" y="34" width="28" height="2.6" />
+      </g>
+      <Visor />
+      <path
+        className={styles.glow}
+        d="M42 25a20 5 0 0 1 -40 0"
+        fill="none"
+        stroke="#c4efff"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
+function BandDrone() {
+  return (
+    <svg viewBox="0 0 44 44" width="44" height="44">
+      <OrbDefs id="band-drone" />
+      <ellipse cx="22" cy="23" rx="13" ry="15" fill="url(#band-drone-shell)" />
+      <g clipPath="url(#band-drone-clip)">
+        <rect x="8" y="33" width="28" height="2.4" fill="#1d232c" />
+        <rect
+          className={styles.glow}
+          x="8"
+          y="24.5"
+          width="28"
+          height="3"
+          fill="#c4efff"
+        />
+      </g>
+      <Visor />
+    </svg>
+  );
+}
+
 export function ClimbingRobot() {
   const laneRef = useRef(null);
   const canvasRef = useRef(null);
   const hitRef = useRef(null);
+  const dronesRef = useRef([]);
 
   useEffect(() => {
     const lane = laneRef.current;
@@ -173,6 +253,72 @@ export function ClimbingRobot() {
     let nextKick = 0;
     let blinkUntil = 0;
     let nextBlink = 0;
+    let lastScroll = performance.now() / 1000; // start docked by the robot
+    let lastTop = "";
+    let drawn = false;
+
+    // Two drones keep the robot company: they hover by its head, and when
+    // the page has been still for a moment they roam the window, racing back
+    // as soon as it scrolls again. Positions are in viewport px.
+    const drones = dronesRef.current.map((el, i) => ({
+      el,
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      tx: 0,
+      ty: 0,
+      until: 0,
+      placed: false,
+      home: i === 0 ? { x: -114, y: -58 } : { x: 38, y: -70 },
+      phase: i * 2.1,
+    }));
+
+    function flyDrones(time, dt, roam, anchorY, ropeX) {
+      let busy = roam;
+      for (const d of drones) {
+        const wobble = reduce ? 0 : 1;
+        const hx =
+          ropeX +
+          d.home.x * scale +
+          wobble * 6 * Math.sin(time * 1.3 + d.phase);
+        const hy =
+          anchorY +
+          d.home.y * scale +
+          wobble * 4 * Math.cos(time * 1.7 + d.phase);
+        if (!d.placed || reduce) {
+          Object.assign(d, { x: hx, y: hy, vx: 0, vy: 0, placed: true });
+        }
+        let gx = hx;
+        let gy = hy;
+        let speed = 700;
+        if (roam) {
+          if (time > d.until || Math.hypot(d.tx - d.x, d.ty - d.y) < 30) {
+            d.tx = 50 + Math.random() * (window.innerWidth - 100);
+            d.ty = 60 + Math.random() * (window.innerHeight - 120);
+            d.until = time + 3 + Math.random() * 3;
+          }
+          [gx, gy, speed] = [d.tx, d.ty, 220];
+        }
+        if (!reduce) {
+          // Steer toward the goal, easing off on arrival.
+          const dx = gx - d.x;
+          const dy = gy - d.y;
+          const dist = Math.hypot(dx, dy);
+          const want =
+            dist > 0.01 ? (speed * Math.min(1, dist / 120)) / dist : 0;
+          const k = 1 - Math.exp(-4 * dt);
+          d.vx += (dx * want - d.vx) * k;
+          d.vy += (dy * want - d.vy) * k;
+          d.x += d.vx * dt;
+          d.y += d.vy * dt;
+          if (dist > 1 || Math.hypot(d.vx, d.vy) > 2) busy = true;
+        }
+        const tilt = clamp(d.vx / 25, -25, 25);
+        d.el.style.transform = `translate3d(${d.x.toFixed(1)}px, ${d.y.toFixed(1)}px, 0) rotate(${tilt.toFixed(1)}deg)`;
+      }
+      return busy;
+    }
 
     // Slides from START_TOP at the top of the page to END_GAP above the
     // bottom, in step with the scroll; at the very bottom, down to the floor.
@@ -213,6 +359,7 @@ export function ClimbingRobot() {
         if (!loading) load();
         return;
       }
+      const ropeX = lane.getBoundingClientRect().left;
       scale =
         parseFloat(getComputedStyle(lane).getPropertyValue("--robot-scale")) ||
         1;
@@ -293,19 +440,29 @@ export function ClimbingRobot() {
           : value[key] + (to - value[key]) * (1 - Math.exp(-rate * dt));
         pending = Math.max(pending, Math.abs(to - value[key]));
       }
-      lane.style.setProperty("--robot-top", `${current.toFixed(1)}px`);
+      const top = `${current.toFixed(1)}px`;
+      if (top !== lastTop) {
+        lane.style.setProperty("--robot-top", top);
+        lastTop = top;
+      }
       lane.dataset.mode = mode;
       lane.dataset.ready = "true";
-      robot.update(value, reduce ? 0 : time, current);
-
-      if (
+      // Only redraw the robot while it's actually changing.
+      const busy =
         moving ||
         pending > 0.02 ||
         (waving && !reduce) ||
         look !== null ||
         kick !== null ||
-        time < blinkUntil
-      ) {
+        time < blinkUntil;
+      if (busy || !drawn) {
+        robot.update(value, reduce ? 0 : time, current);
+        drawn = true;
+      }
+      const roam = !reduce && calm && time - lastScroll > 0.8;
+      const flying = flyDrones(time, dt, roam, current - window.scrollY, ropeX);
+
+      if (busy || flying) {
         schedule();
       } else if (!reduce) {
         // Asleep until the next blink, look around or leg swing.
@@ -336,7 +493,11 @@ export function ClimbingRobot() {
       schedule();
     };
 
-    window.addEventListener("scroll", schedule, {
+    const onScroll = () => {
+      lastScroll = performance.now() / 1000;
+      schedule();
+    };
+    window.addEventListener("scroll", onScroll, {
       passive: true,
       capture: true,
     });
@@ -352,7 +513,7 @@ export function ClimbingRobot() {
 
     return () => {
       disposed = true;
-      window.removeEventListener("scroll", schedule, { capture: true });
+      window.removeEventListener("scroll", onScroll, { capture: true });
       window.removeEventListener("resize", schedule);
       heightWatcher.disconnect();
       hit.removeEventListener("pointerenter", onEnter);
@@ -391,6 +552,22 @@ export function ClimbingRobot() {
           <span className={`${styles.spark} ${styles.sparkB}`} />
           {/* Hovering here makes the robot wave. */}
           <div ref={hitRef} className={styles.hit} />
+        </div>
+
+        <div className={styles.drones}>
+          {[RingDrone, BandDrone].map((Art, i) => (
+            <div
+              key={i}
+              ref={(el) => {
+                dronesRef.current[i] = el;
+              }}
+              className={styles.drone}
+            >
+              <div className={styles.bob}>
+                <Art />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

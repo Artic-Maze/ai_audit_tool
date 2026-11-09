@@ -208,6 +208,62 @@
   pointer-events: auto;
 }
 
+/* Drones fly anywhere in the window, so their layer is fixed. */
+.drones {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.lane[data-ready="true"] .drones {
+  visibility: visible;
+}
+
+.drone {
+  position: absolute;
+  left: -22px;
+  top: -22px;
+  width: 44px;
+  height: 44px;
+  transform: translate3d(-100px, -100px, 0);
+  will-change: transform;
+  filter: drop-shadow(0 0 7px rgb(110 200 255 / 0.55));
+}
+
+.bob {
+  animation: hover 1.6s ease-in-out infinite;
+}
+
+.drone + .drone .bob {
+  animation-delay: -0.8s;
+}
+
+.glow {
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes hover {
+  0%,
+  100% {
+    transform: translateY(-2px);
+  }
+  50% {
+    transform: translateY(2px);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
 @keyframes spark {
   0%,
   100% {
@@ -231,7 +287,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .spark,
-  .trail span {
+  .trail span,
+  .bob,
+  .glow {
     animation: none;
   }
 }
