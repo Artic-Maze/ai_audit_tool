@@ -1,36 +1,51 @@
 import * as THREE from "three";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
 /*
- * The climbing robot as a Three.js scene: a chrome humanoid with a round
- * helmet, a dark visor and glowing blue eyes, and a jetpack of twin rocket
- * tubes on its back, hugging a braided rope from the left. Loaded on demand
- * by ClimbingRobot, which drives it with update().
+ * The climbing robot as a Three.js scene, in the blocky look of the landing
+ * page design: a dark hoodie with pink drawstrings and the logo, a black
+ * visor with pink eyes and an antenna, navy trousers, white sneakers with
+ * pink soles, and a jetpack on its back. It hugs a slim rope from the left.
+ * Loaded on demand by ClimbingRobot, which drives it with update().
  *
- * Units are CSS pixels. The origin is the anchor: the point on the rope
- * level with the centre of the head. y points up, z toward the viewer, and
- * the rope runs along x = 0, z = 0.
+ * Every part is a box with flat colours per face, as in the original CSS
+ * version. Units are CSS pixels. The origin is the anchor: the point on the
+ * rope level with the centre of the head. y points up, z toward the viewer,
+ * and the rope runs along x = 0, z = 0.
  */
 
 // The canvas covers this box around the anchor (keep in step with .canvas).
 export const VIEW = { left: -120, right: 50, top: 46, bottom: -204 };
 
-const BX = -34; // the body's centre line, left of the rope
-const NECK_Y = -28;
-const SHOULDER = { y: -42, near: BX + 22, far: BX - 22 };
-const HIP = { y: -84, near: BX + 9, far: BX - 9 };
-const ARM = [30, 28]; // shoulder to elbow, elbow to wrist
-const LEG = [27, 26]; // hip to knee, knee to ankle
+const BX = -28; // the body's centre line, left of the rope
+const NECK_Y = -16;
+const SHOULDER = { y: -28, near: BX + 30, far: BX - 30 };
+const HIP = { y: -81, near: BX + 11, far: BX - 11 };
+const ARM = [33, 29]; // shoulder to elbow, elbow to wrist
+const LEG = [33, 31]; // hip to knee, knee to ankle
 const REACH_Z = 18; // the lower hand grips the front of the rope
 const BRAID = 9; // rope texture repeat, px
 
+// Face colours: front, back, sides, top, bottom.
+const HOODIE = ["#3B3735", "#2E2B29", "#2B2826", "#4A4542", "#1E1C1A"];
+const SLEEVE = ["#383432", "#2C2927", "#2A2725", "#44403D", "#1E1C1A"];
+const HEAD = ["#2A2623", "#1B1816", "#1D1A18", "#3A3532", "#100E0C"];
+const NECK = ["#3A3532", "#2A2623", "#24201E", "#4A4542", "#151210"];
+const TROUSERS = ["#2F3D5A", "#263149", "#232C42", "#3A4868", "#1A2133"];
+const SHOES = ["#E7E2DC", "#D6D0C9", "#CFC9C2", "#F3EEEA", "#E0517F"];
+const SKIN = ["#C98E6B", "#A8724F", "#B37C59", "#D49B78", "#9A6847"];
+const PACK = ["#2A2623", "#1F1C1A", "#24201E", "#34302D", "#141210"];
+const STALK = ["#3A3330", "#3A3330", "#2E2825", "#4A4542", "#2E2825"];
+const PINK = "#E0517F";
+const ALL_PINK = [PINK, PINK, PINK, PINK, PINK];
+
 const rad = THREE.MathUtils.degToRad;
-const UP = new THREE.Vector3(0, 1, 0);
 const FRONT = new THREE.Vector3(0, 0, 1);
 const dir = new THREE.Vector3();
 const bend = new THREE.Vector3();
 const lowerDir = new THREE.Vector3();
+const axisX = new THREE.Vector3();
+const axisZ = new THREE.Vector3();
+const basis = new THREE.Matrix4();
 
 // Two-bone IK: puts `end` at the target (or as close as the bones reach)
 // and `mid` (the elbow or knee) on the side of the pole.
@@ -52,19 +67,38 @@ function solveLimb(root, target, [upper, lower], pole, mid, end) {
   mid.copy(root).addScaledVector(dir, along).addScaledVector(bend, out);
 }
 
-// Lays a mesh built along +y between two points.
+// Turns a box so its y axis runs along `along` and its front faces the
+// viewer as far as it can.
+function orient(mesh, along) {
+  axisZ.copy(FRONT).addScaledVector(along, -FRONT.dot(along));
+  if (axisZ.lengthSq() < 1e-6) axisZ.set(1, 0, 0);
+  axisZ.normalize();
+  axisX.crossVectors(along, axisZ);
+  mesh.quaternion.setFromRotationMatrix(basis.makeBasis(axisX, along, axisZ));
+}
+
+// Lays a box between two points.
 function placeBetween(mesh, a, b) {
   mesh.position.addVectors(a, b).multiplyScalar(0.5);
   dir.subVectors(b, a).normalize();
-  mesh.quaternion.setFromUnitVectors(UP, dir);
+  orient(mesh, dir);
 }
 
-function canvasTexture(width, height, paint) {
+function canvasTexture(width, height, paint, scale = 1) {
   const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  paint(canvas.getContext("2d"));
-  return new THREE.CanvasTexture(canvas);
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const g = canvas.getContext("2d");
+  g.scale(scale, scale);
+  paint(g);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function roundRect(g, x, y, w, h, r) {
+  g.beginPath();
+  g.roundRect(x, y, w, h, r);
 }
 
 export function createRobot(canvas) {
@@ -77,15 +111,8 @@ export function createRobot(canvas) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(VIEW.right - VIEW.left, VIEW.top - VIEW.bottom, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
   const scene = new THREE.Scene();
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  pmrem.dispose();
-  scene.environment = environment;
-  scene.environmentIntensity = 1.1;
-
   const camera = new THREE.OrthographicCamera(
     VIEW.left,
     VIEW.right,
@@ -95,114 +122,101 @@ export function createRobot(canvas) {
     400,
   );
   camera.position.z = 200;
-
-  const key = new THREE.DirectionalLight(0xffffff, 2.4);
+  const key = new THREE.DirectionalLight(0xffffff, 2);
   key.position.set(-80, 140, 160);
-  const rim = new THREE.DirectionalLight(0x8fb8ff, 1.4);
-  rim.position.set(120, 40, -100);
-  scene.add(key, rim, new THREE.AmbientLight(0xffffff, 0.2));
+  scene.add(key, new THREE.AmbientLight(0xffffff, 0.6));
 
-  // Polished chrome, dark gunmetal joints, a black glass visor.
-  const chrome = new THREE.MeshPhysicalMaterial({
-    color: 0xc9d0d8,
-    metalness: 0.92,
-    roughness: 0.2,
-    clearcoat: 0.6,
-    clearcoatRoughness: 0.12,
-  });
-  const dark = new THREE.MeshStandardMaterial({
-    color: 0x2a2f37,
-    metalness: 0.6,
-    roughness: 0.38,
-  });
-  const visor = new THREE.MeshPhysicalMaterial({
-    color: 0x05070b,
-    roughness: 0.1,
-    clearcoat: 1,
-    clearcoatRoughness: 0.03,
-  });
-  const glow = new THREE.MeshBasicMaterial({
-    color: 0x2f86ff,
-    toneMapped: false,
-  });
-  const flameOuter = new THREE.MeshBasicMaterial({
-    color: 0xff8a2a,
-    transparent: true,
-    opacity: 0.85,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    toneMapped: false,
-  });
-  const flameInner = flameOuter.clone();
-  flameInner.color.set(0xfff1b8);
-
-  // The rope, braided, faded at the ends into the CSS rope behind the canvas.
-  const braid = canvasTexture(32, 32, (g) => {
-    g.fillStyle = "#222226";
-    g.fillRect(0, 0, 32, 32);
-    g.lineWidth = 7;
-    g.strokeStyle = "#4b4b52";
-    for (let i = -32; i <= 64; i += 16) {
-      g.beginPath();
-      g.moveTo(i, 32);
-      g.lineTo(i + 32, 0);
-      g.stroke();
+  const disposables = [];
+  const keep = (thing) => {
+    disposables.push(thing);
+    return thing;
+  };
+  const flat = new Map();
+  const color = (hex) => {
+    if (!flat.has(hex)) {
+      flat.set(hex, keep(new THREE.MeshBasicMaterial({ color: hex })));
     }
-  });
-  braid.colorSpace = THREE.SRGBColorSpace;
-  braid.wrapS = braid.wrapT = THREE.RepeatWrapping;
-  braid.repeat.set(2, (VIEW.top - VIEW.bottom) / BRAID);
-  const fade = canvasTexture(1, 64, (g) => {
-    const ramp = g.createLinearGradient(0, 0, 0, 64);
-    ramp.addColorStop(0, "#000");
-    ramp.addColorStop(0.16, "#fff");
-    ramp.addColorStop(0.84, "#fff");
-    ramp.addColorStop(1, "#000");
-    g.fillStyle = ramp;
-    g.fillRect(0, 0, 1, 64);
-  });
-  const shadow = canvasTexture(64, 16, (g) => {
-    const blob = g.createRadialGradient(32, 8, 0, 32, 8, 32);
-    blob.addColorStop(0, "rgba(0,0,0,0.9)");
-    blob.addColorStop(1, "rgba(0,0,0,0)");
-    g.fillStyle = blob;
-    g.fillRect(0, 0, 64, 16);
-  });
-  const ropeMaterial = new THREE.MeshStandardMaterial({
-    map: braid,
-    alphaMap: fade,
-    transparent: true,
-    roughness: 0.55,
-  });
-  const shadowMaterial = new THREE.MeshBasicMaterial({
-    map: shadow,
-    transparent: true,
-    depthWrite: false,
-    opacity: 0,
-  });
-
-  const disposables = [
-    chrome,
-    dark,
-    visor,
-    glow,
-    flameOuter,
-    flameInner,
-    ropeMaterial,
-    shadowMaterial,
-    braid,
-    fade,
-    shadow,
-    environment,
+    return flat.get(hex);
+  };
+  // Per-face materials, in BoxGeometry's order: right, left, top, bottom,
+  // front, back. `frontMaterial` replaces the front (for a decal).
+  const faces = ([front, back, side, top, bottom], frontMaterial) => [
+    color(side),
+    color(side),
+    color(top),
+    color(bottom),
+    frontMaterial ?? color(front),
+    color(back),
   ];
   const add = (geometry, material, parent, x = 0, y = 0, z = 0) => {
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new THREE.Mesh(keep(geometry), material);
     mesh.position.set(x, y, z);
     parent.add(mesh);
-    disposables.push(geometry);
     return mesh;
   };
-  const rounded = (w, h, d, r) => new RoundedBoxGeometry(w, h, d, 4, r);
+  const box = (w, h, d, colors, parent, x, y, z, frontMaterial) =>
+    add(
+      new THREE.BoxGeometry(w, h, d),
+      faces(colors, frontMaterial),
+      parent,
+      x,
+      y,
+      z,
+    );
+  const decal = (w, h, paint) =>
+    keep(
+      new THREE.MeshBasicMaterial({
+        map: keep(canvasTexture(w, h, paint, 6)),
+        transparent: true,
+      }),
+    );
+
+  // The rope: slim, dark and braided, faded at the ends into the CSS rope
+  // behind the canvas.
+  const braid = keep(
+    canvasTexture(32, 32, (g) => {
+      g.fillStyle = "#222226";
+      g.fillRect(0, 0, 32, 32);
+      g.lineWidth = 7;
+      g.strokeStyle = "#4b4b52";
+      for (let i = -32; i <= 64; i += 16) {
+        g.beginPath();
+        g.moveTo(i, 32);
+        g.lineTo(i + 32, 0);
+        g.stroke();
+      }
+    }),
+  );
+  braid.wrapS = braid.wrapT = THREE.RepeatWrapping;
+  braid.repeat.set(2, (VIEW.top - VIEW.bottom) / BRAID);
+  const fade = keep(
+    canvasTexture(1, 64, (g) => {
+      const ramp = g.createLinearGradient(0, 0, 0, 64);
+      ramp.addColorStop(0, "#000");
+      ramp.addColorStop(0.16, "#fff");
+      ramp.addColorStop(0.84, "#fff");
+      ramp.addColorStop(1, "#000");
+      g.fillStyle = ramp;
+      g.fillRect(0, 0, 1, 64);
+    }),
+  );
+  fade.colorSpace = THREE.NoColorSpace;
+  const shadowMaterial = keep(
+    new THREE.MeshBasicMaterial({
+      map: keep(
+        canvasTexture(64, 16, (g) => {
+          const blob = g.createRadialGradient(32, 8, 0, 32, 8, 32);
+          blob.addColorStop(0, "rgba(0,0,0,0.9)");
+          blob.addColorStop(1, "rgba(0,0,0,0)");
+          g.fillStyle = blob;
+          g.fillRect(0, 0, 64, 16);
+        }),
+      ),
+      transparent: true,
+      depthWrite: false,
+      opacity: 0,
+    }),
+  );
 
   // Seen a little from above. The body swings about the high hand and turns
   // about the rope, so both hands stay on it.
@@ -216,7 +230,14 @@ export function createRobot(canvas) {
 
   add(
     new THREE.CylinderGeometry(3, 3, VIEW.top - VIEW.bottom, 16, 1, true),
-    ropeMaterial,
+    keep(
+      new THREE.MeshStandardMaterial({
+        map: braid,
+        alphaMap: fade,
+        transparent: true,
+        roughness: 0.55,
+      }),
+    ),
     root,
     0,
     (VIEW.top + VIEW.bottom) / 2,
@@ -230,164 +251,172 @@ export function createRobot(canvas) {
     -24,
   );
 
-  // Torso: neck, chest, segmented waist, hips.
-  add(new THREE.CylinderGeometry(6, 7, 10, 20), dark, body, BX, -33);
-  add(rounded(40, 27, 26, 10), chrome, body, BX, -51);
-  add(new THREE.CylinderGeometry(12, 11, 5, 24), dark, body, BX, -66);
-  add(new THREE.CylinderGeometry(11.5, 10.5, 5, 24), chrome, body, BX, -71);
-  add(rounded(32, 13, 22, 5), chrome, body, BX, -80);
+  // Hoodie: chest with the collar, drawstrings and logo; the lower part
+  // with its pocket and hem.
+  const chest = decal(54, 36, (g) => {
+    g.fillStyle = HOODIE[0];
+    g.fillRect(0, 0, 54, 36);
+    g.fillStyle = "#262321";
+    roundRect(g, 18, 0, 18, 8, [0, 0, 9, 9]);
+    g.fill();
+    g.fillStyle = PINK;
+    g.fillRect(21, 7, 2, 14);
+    g.fillRect(31, 7, 2, 16);
+    g.strokeStyle = "#E8638D";
+    g.lineWidth = 1.2;
+    g.translate(21, 24);
+    g.beginPath();
+    g.moveTo(1, 9);
+    g.lineTo(6, 1);
+    g.lineTo(11, 9);
+    g.moveTo(3.5, 9);
+    g.lineTo(6, 5);
+    g.lineTo(8.5, 9);
+    g.stroke();
+  });
+  const pocket = decal(44, 28, (g) => {
+    g.fillStyle = HOODIE[0];
+    g.fillRect(0, 0, 44, 28);
+    g.strokeStyle = "#2A2725";
+    g.lineWidth = 1;
+    roundRect(g, 9.5, 3.5, 27, 14, [3, 3, 6, 6]);
+    g.stroke();
+    g.fillStyle = "#2E2B29";
+    g.fillRect(0, 22, 44, 6);
+    g.fillStyle = "#4A4542";
+    g.fillRect(0, 22, 44, 1);
+  });
+  box(54, 36, 26, HOODIE, body, BX, -40, 0, chest);
+  box(44, 28, 22, HOODIE, body, BX, -71, 0, pocket);
+  box(12, 9, 12, NECK, body, BX, -20, 0);
 
-  // Jetpack: a back plate with twin rocket tubes on each side, and flames
-  // and a warm light while flying.
-  add(rounded(30, 30, 6, 3), chrome, body, BX, -51, -16);
+  // Jetpack: a pack on the back with two nozzles, and flames while flying.
+  box(32, 30, 12, PACK, body, BX, -42, -19);
+  box(3, 16, 1.4, ALL_PINK, body, BX, -40, -25.7);
+  const flameOuter = keep(
+    new THREE.MeshBasicMaterial({
+      color: 0xff6f7d,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+  );
+  const flameInner = keep(flameOuter.clone());
+  flameInner.color.set(0xffe3c2);
   const flames = [];
-  for (const x of [BX - 27, BX - 19, BX + 19, BX + 27]) {
+  for (const x of [BX - 9, BX + 9]) {
     add(
-      new THREE.CylinderGeometry(4.2, 4.2, 26, 18),
-      chrome,
+      new THREE.CylinderGeometry(4, 5.5, 8, 16),
+      color("#1B1816"),
       body,
       x,
-      -55,
-      -21,
+      -61,
+      -19,
     );
-    add(new THREE.ConeGeometry(4.2, 7, 18), chrome, body, x, -38.5, -21);
-    add(new THREE.CylinderGeometry(3.4, 4.6, 5, 16), dark, body, x, -70.5, -21);
     const flame = new THREE.Group();
-    flame.position.set(x, -73, -21);
+    flame.position.set(x, -65, -19);
     body.add(flame);
     add(
-      new THREE.ConeGeometry(4, 24, 14, 1, true),
+      new THREE.ConeGeometry(5, 26, 14, 1, true),
       flameOuter,
       flame,
       0,
-      -12,
+      -13,
     ).rotation.x = Math.PI;
     add(
-      new THREE.ConeGeometry(2, 14, 10, 1, true),
+      new THREE.ConeGeometry(2.6, 15, 10, 1, true),
       flameInner,
       flame,
       0,
-      -7,
+      -7.5,
     ).rotation.x = Math.PI;
     flames.push(flame);
   }
-  const thruster = new THREE.PointLight(0xff9a3c, 0, 160, 2);
-  thruster.position.set(BX, -86, -10);
-  body.add(thruster);
 
-  // Head: a chrome sphere with a dark visor band, two round blue eyes, an
-  // ear disc and an antenna on one side.
+  // Head: a dark box with a visor, two pink eyes and an antenna. It turns
+  // at the neck.
   const head = new THREE.Group();
   head.position.set(BX, NECK_Y, 0);
   head.rotation.order = "YXZ";
   body.add(head);
-  add(new THREE.SphereGeometry(30, 40, 28), chrome, head, 0, 28);
+  box(36, 32, 32, HEAD, head, 0, 16, 0);
   add(
-    new THREE.SphereGeometry(30.7, 40, 14, Math.PI / 2 - 1.25, 2.5, 0.98, 0.78),
-    visor,
+    new THREE.PlaneGeometry(26, 16),
+    decal(26, 16, (g) => {
+      g.fillStyle = "#060503";
+      g.strokeStyle = "#3A2A2C";
+      g.lineWidth = 1;
+      roundRect(g, 0.5, 0.5, 25, 15, 5);
+      g.fill();
+      g.stroke();
+    }),
     head,
     0,
-    28,
+    17,
+    16.05,
   );
   const eyes = new THREE.Group();
-  eyes.position.set(0, 34, 0);
+  eyes.position.set(0, 17, 16.1);
   head.add(eyes);
-  for (const side of [-1, 1]) {
-    const eye = add(new THREE.CircleGeometry(5.6, 28), glow, eyes);
-    eye.position.set(side * 9.2, 0, 28.9);
-    eye.rotation.set(rad(-11), side * rad(18), 0);
+  const eyeGlow = keep(
+    new THREE.MeshBasicMaterial({
+      color: PINK,
+      transparent: true,
+      opacity: 0.45,
+      depthWrite: false,
+    }),
+  );
+  for (const x of [-6.5, 6.5]) {
+    add(new THREE.PlaneGeometry(10, 12), eyeGlow, eyes, x, 0, -0.02);
+    add(new THREE.PlaneGeometry(6, 8), color("#F27AA0"), eyes, x);
   }
-  const ear = add(
-    new THREE.CylinderGeometry(7.5, 7.5, 4, 24),
-    chrome,
-    head,
-    30,
-    28,
-  );
-  ear.rotation.z = Math.PI / 2;
-  add(
-    new THREE.CylinderGeometry(4.5, 4.5, 4.6, 20),
-    dark,
-    head,
-    30.4,
-    28,
-  ).rotation.z = Math.PI / 2;
-  const antenna = add(
-    new THREE.CylinderGeometry(0.9, 0.9, 24, 8),
-    chrome,
-    head,
-    27,
-    50,
-  );
-  antenna.rotation.z = rad(-14);
-  add(new THREE.SphereGeometry(1.8, 12, 8), chrome, head, 30, 62);
+  box(3, 14, 3, STALK, head, 0, 37, 0);
+  add(new THREE.SphereGeometry(4, 16, 12), color("#E8638D"), head, 0, 45);
 
-  // Limbs: two chrome capsules, a gunmetal joint with a band, and a hand or
-  // boot.
-  function limb([upper, lower], [r1, r2]) {
+  // Limbs: two boxes and a joint block; hands, cuffs and sneakers.
+  function limb([upper, lower], [w1, w2], colors) {
     return {
-      upper: add(
-        new THREE.CapsuleGeometry(r1, upper - r1, 6, 16),
-        chrome,
-        body,
-      ),
-      lower: add(
-        new THREE.CapsuleGeometry(r2, lower - r2, 6, 16),
-        chrome,
-        body,
-      ),
-      joint: add(new THREE.SphereGeometry(r2 + 0.8, 20, 14), dark, body),
-      ring: add(new THREE.TorusGeometry(r2 + 1, 1.2, 8, 24), dark, body),
+      upper: box(w1, upper, w1, colors, body),
+      lower: box(w2, lower, w2, colors, body),
+      joint: box(w2, w2, w2, colors, body),
       mid: new THREE.Vector3(),
       end: new THREE.Vector3(),
     };
   }
-  const arms = { near: limb(ARM, [5.5, 5]), far: limb(ARM, [5.5, 5]) };
-  const legs = { near: limb(LEG, [7.5, 6.8]), far: limb(LEG, [7.5, 6.8]) };
+  const arms = {
+    near: limb(ARM, [13, 12], SLEEVE),
+    far: limb(ARM, [13, 12], SLEEVE),
+  };
+  const legs = {
+    near: limb(LEG, [17, 15], TROUSERS),
+    far: limb(LEG, [17, 15], TROUSERS),
+  };
   const shoulders = {};
-  const hips = {};
+  const hipJoints = {};
   const hands = {};
   const cuffs = {};
   const boots = {};
   for (const side of ["near", "far"]) {
     shoulders[side] = new THREE.Vector3(SHOULDER[side], SHOULDER.y, 4);
-    hips[side] = new THREE.Vector3(HIP[side], HIP.y, 0);
-    add(
-      new THREE.SphereGeometry(8.5, 24, 16),
-      chrome,
-      body,
-      SHOULDER[side],
-      SHOULDER.y,
-    );
-    add(new THREE.SphereGeometry(7, 20, 14), dark, body, HIP[side], HIP.y);
-    hands[side] = add(rounded(11, 12, 9, 3.5), chrome, body);
-    cuffs[side] = add(new THREE.CylinderGeometry(5.8, 5.8, 3, 18), dark, body);
-    const boot = new THREE.Group();
-    body.add(boot);
-    add(rounded(17, 12, 24, 5), chrome, boot, 0, 0, 3);
-    add(rounded(18, 3.5, 25, 1.5), dark, boot, 0, -6, 3);
-    boots[side] = boot;
+    hipJoints[side] = new THREE.Vector3(HIP[side], HIP.y, 0);
+    hands[side] = box(11, 15, 9, SKIN, body);
+    cuffs[side] = box(12.6, 4, 12.6, ALL_PINK, body);
+    boots[side] = box(18, 11, 26, SHOES, body);
   }
 
   const target = new THREE.Vector3();
   const pole = new THREE.Vector3();
   const wave = new THREE.Vector3();
   const rest = new THREE.Vector3();
-  const normal = new THREE.Vector3();
-  const upperDir = new THREE.Vector3();
   const flyAt = new THREE.Vector3();
 
-  function pose(part, root, goal, poleAt, sizes) {
-    solveLimb(root, goal, sizes, poleAt, part.mid, part.end);
-    placeBetween(part.upper, root, part.mid);
+  function pose(part, from, goal, poleAt, sizes) {
+    solveLimb(from, goal, sizes, poleAt, part.mid, part.end);
+    placeBetween(part.upper, from, part.mid);
     placeBetween(part.lower, part.mid, part.end);
     part.joint.position.copy(part.mid);
-    part.ring.position.copy(part.mid);
-    upperDir.subVectors(part.mid, root).normalize();
-    lowerDir.subVectors(part.end, part.mid).normalize();
-    normal.crossVectors(upperDir, lowerDir);
-    if (normal.lengthSq() < 1e-6) normal.copy(FRONT);
-    part.ring.quaternion.setFromUnitVectors(FRONT, normal.normalize());
+    part.joint.quaternion.copy(part.lower.quaternion);
   }
 
   /**
@@ -405,7 +434,6 @@ export function createRobot(canvas) {
       flame.visible = p.thrust > 0.02;
       flame.scale.set(1, p.thrust * (0.85 + 0.15 * Math.sin(time * 47 + i)), 1);
     });
-    thruster.intensity = 800 * p.thrust;
     head.rotation.set(rad(p.headPitch), rad(p.headYaw), rad(p.headRoll));
     eyes.scale.y = p.eyes;
     braid.offset.y = -anchorY / BRAID;
@@ -414,15 +442,15 @@ export function createRobot(canvas) {
 
     // The high hand grips the rope; the other grips it lower down, rests on
     // a knee while sitting, or waves. Flying, both hang at the sides.
-    target.set(0, p.hiY - p.bob, 0).lerp(flyAt.set(BX + 30, -82, 2), p.fly);
-    pole.set(26, -50, 8).lerp(flyAt.set(BX + 40, -60, -30), p.fly);
+    target.set(0, p.hiY - p.bob, 0).lerp(flyAt.set(BX + 34, -74, 2), p.fly);
+    pole.set(26, -40, 8).lerp(flyAt.set(BX + 44, -50, -30), p.fly);
     pose(arms.near, shoulders.near, target, pole, ARM);
     wave.set(
       BX - 46 + 5 * Math.sin(time * 10),
-      18 + 3 * Math.sin(time * 6),
+      22 + 3 * Math.sin(time * 6),
       12,
     );
-    rest.set(BX - 8, -66, 30);
+    rest.set(BX - 8, -60, 30);
     // It reaches across the chest to the front of the rope: a point on the
     // rope, in front, turned back by the body's yaw so it stays on screen.
     const yaw = rad(p.yaw);
@@ -430,33 +458,34 @@ export function createRobot(canvas) {
       .set(-REACH_Z * Math.sin(yaw), p.loY - p.bob, REACH_Z * Math.cos(yaw))
       .lerp(rest, p.rest)
       .lerp(wave, p.wave)
-      .lerp(flyAt.set(BX - 32, -82, 2), p.fly);
+      .lerp(flyAt.set(BX - 34, -74, 2), p.fly);
     pole
-      .set(BX - 10, -84, 40)
-      .lerp(wave.set(BX - 60, -50, 10), p.wave)
-      .lerp(flyAt.set(BX - 40, -60, -30), p.fly);
+      .set(BX - 10, -76, 40)
+      .lerp(wave.set(BX - 60, -40, 10), p.wave)
+      .lerp(flyAt.set(BX - 44, -50, -30), p.fly);
     pose(arms.far, shoulders.far, target, pole, ARM);
     for (const side of ["near", "far"]) {
       const arm = arms[side];
       lowerDir.subVectors(arm.end, arm.mid).normalize();
-      hands[side].position.copy(arm.end).addScaledVector(lowerDir, 6);
-      hands[side].quaternion.setFromUnitVectors(UP, lowerDir);
+      hands[side].position.copy(arm.end).addScaledVector(lowerDir, 7);
+      orient(hands[side], lowerDir);
       cuffs[side].position.copy(arm.end).addScaledVector(lowerDir, -2);
-      cuffs[side].quaternion.setFromUnitVectors(UP, lowerDir);
+      orient(cuffs[side], lowerDir);
     }
 
     // Feet wrap the rope, rest on the floor with the knees up, or dangle in
     // flight.
     for (const side of ["near", "far"]) {
       const s = side === "near" ? "A" : "B";
+      const hip = hipJoints[side];
       target
         .set(p[`f${s}x`], p[`f${s}y`] - p.bob, p[`f${s}z`])
-        .lerp(flyAt.set(hips[side].x, -140, 4), p.fly);
+        .lerp(flyAt.set(hip.x, -142, 4), p.fly);
       pole
-        .set(hips[side].x + (side === "near" ? 6 : -6), -104, 40)
-        .lerp(rest.set(hips[side].x, -40, 60), p.sit);
-      pose(legs[side], hips[side], target, pole, LEG);
-      boots[side].position.copy(legs[side].end).add(rest.set(0, -4, 0));
+        .set(hip.x + (side === "near" ? 6 : -6), -104, 40)
+        .lerp(rest.set(hip.x, -40, 60), p.sit);
+      pose(legs[side], hip, target, pole, LEG);
+      boots[side].position.copy(legs[side].end).add(rest.set(0, -5, 4));
     }
 
     renderer.render(scene, camera);

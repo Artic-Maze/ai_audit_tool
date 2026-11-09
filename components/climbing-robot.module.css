@@ -144,8 +144,8 @@
   position: absolute;
   display: none;
   border-radius: 50%;
-  background: #d6ecff;
-  box-shadow: 0 0 10px 3px #4fa3ff;
+  background: #ffb3cb;
+  box-shadow: 0 0 10px 3px #e0517f;
 }
 
 .sparkA {
@@ -186,7 +186,7 @@
   width: 2px;
   background: repeating-linear-gradient(
     transparent 0 12px,
-    rgb(140 196 255 / 0.6) 12px 30px
+    rgb(255 179 203 / 0.55) 12px 30px
   );
   animation: rush 0.28s linear infinite;
 }
@@ -238,7 +238,7 @@
   height: 44px;
   transform: translate3d(-100px, -100px, 0);
   will-change: transform;
-  filter: drop-shadow(0 0 7px rgb(110 200 255 / 0.55));
+  filter: drop-shadow(0 0 7px rgb(224 81 127 / 0.5));
 }
 
 .bob {
@@ -253,15 +253,27 @@
   animation: pulse 1.8s ease-in-out infinite;
 }
 
-/* The orb drone's rocket flame and the saucer's running lights. */
+/* The orb drone's rocket flame and the cube drone's rotors. */
 .flame {
   transform-box: fill-box;
   transform-origin: 50% 0;
   animation: flicker 0.12s ease-in-out infinite alternate;
 }
 
-.lights {
-  animation: pulse 1.2s ease-in-out infinite;
+.rotor {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spin 0.08s linear infinite;
+}
+
+@keyframes spin {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.3);
+  }
 }
 
 @keyframes flicker {
@@ -322,7 +334,7 @@
   .bob,
   .glow,
   .flame,
-  .lights {
+  .rotor {
     animation: none;
   }
 }

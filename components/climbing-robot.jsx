@@ -26,7 +26,7 @@ const START_TOP = 90;
 const END_GAP = 320;
 // At the very bottom it sits on the floor: the hips are PELVIS px below the
 // anchor, and the floor is FLOOR px above the bottom of the page.
-const PELVIS = 87;
+const PELVIS = 85;
 const FLOOR = 26;
 // Climbing speed in px per frame, down and up. When the page runs more than
 // SLIDE_GAP px ahead of the robot (a fast scroll down), it slides to catch
@@ -156,116 +156,100 @@ const RATE = {
   thrust: 10,
 };
 
-// The drones, each drawn on a 44 × 44 box centred on its position. The
-// first is a chrome orb with a visor, round blue eyes, a ring of light and
-// a rocket flame; the second a little flying saucer with running lights.
-function RingDrone() {
+// The drones, each drawn on a 44 × 44 box centred on its position, in the
+// robot's colours. The first is a little copy of its head with two rotors;
+// the second a dark orb with a ring of pink light and a rocket flame.
+function CubeDrone() {
+  return (
+    <svg viewBox="0 0 44 44" width="44" height="44" overflow="visible">
+      <path d="M12 13 L4 9 M33 13 L41 9" stroke="#3a3330" strokeWidth="2" />
+      <ellipse
+        className={styles.rotor}
+        cx="4"
+        cy="8"
+        rx="6"
+        ry="1.3"
+        fill="#f6d6e2"
+        opacity="0.75"
+      />
+      <ellipse
+        className={styles.rotor}
+        cx="40"
+        cy="8"
+        rx="6"
+        ry="1.3"
+        fill="#f6d6e2"
+        opacity="0.75"
+      />
+      <path d="M11 15 L15 11 H37 L33 15 Z" fill="#3a3532" />
+      <path d="M33 15 L37 11 V29 L33 33 Z" fill="#1d1a18" />
+      <rect x="11" y="15" width="22" height="18" fill="#2a2623" />
+      <rect
+        x="13.5"
+        y="18.5"
+        width="17"
+        height="10"
+        rx="3.5"
+        fill="#060503"
+        stroke="#3a2a2c"
+        strokeWidth="0.8"
+      />
+      <rect x="16.5" y="21" width="3.6" height="5" rx="1.6" fill="#f27aa0" />
+      <rect x="23.9" y="21" width="3.6" height="5" rx="1.6" fill="#f27aa0" />
+      <path d="M24 11 V5" stroke="#3a3330" strokeWidth="1.6" />
+      <circle className={styles.glow} cx="24" cy="4" r="2" fill="#e8638d" />
+    </svg>
+  );
+}
+
+function OrbDrone() {
   return (
     <svg viewBox="0 0 44 44" width="44" height="44" overflow="visible">
       <defs>
-        <radialGradient id="ring-drone-shell" cx="0.38" cy="0.3" r="0.78">
-          <stop offset="0" stopColor="#ffffff" />
-          <stop offset="0.3" stopColor="#d5dbe3" />
-          <stop offset="0.75" stopColor="#7d8794" />
-          <stop offset="1" stopColor="#3a414c" />
+        <radialGradient id="orb-drone-shell" cx="0.38" cy="0.3" r="0.78">
+          <stop offset="0" stopColor="#6a625d" />
+          <stop offset="0.45" stopColor="#3b3735" />
+          <stop offset="1" stopColor="#141210" />
         </radialGradient>
-        <linearGradient id="ring-drone-flame" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#fff4c2" />
-          <stop offset="0.35" stopColor="#ffb547" />
-          <stop offset="1" stopColor="#ff6a1a" stopOpacity="0" />
+        <linearGradient id="orb-drone-flame" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fff1e0" />
+          <stop offset="0.35" stopColor="#ff8a7a" />
+          <stop offset="1" stopColor="#e0517f" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path
         className={styles.flame}
         d="M18.6 35 Q22 60 25.4 35 Z"
-        fill="url(#ring-drone-flame)"
+        fill="url(#orb-drone-flame)"
       />
-      <rect x="18.5" y="32" width="7" height="4" rx="1.5" fill="#2a2f37" />
+      <rect x="18.5" y="32" width="7" height="4" rx="1.5" fill="#1b1816" />
       <path
         d="M1 22a21 6 0 0 1 42 0"
         fill="none"
-        stroke="#8fd8ff"
+        stroke="#e0517f"
         strokeWidth="1.5"
-        opacity="0.6"
+        opacity="0.55"
       />
-      <circle cx="22" cy="21" r="13" fill="url(#ring-drone-shell)" />
-      <rect x="10" y="13.5" width="24" height="9" rx="4.5" fill="#090c12" />
+      <circle cx="22" cy="21" r="13" fill="url(#orb-drone-shell)" />
       <rect
-        x="12"
-        y="14.4"
-        width="10"
-        height="1.6"
-        rx="0.8"
-        fill="#fff"
-        opacity="0.18"
+        x="10"
+        y="13.5"
+        width="24"
+        height="9"
+        rx="4.5"
+        fill="#060503"
+        stroke="#3a2a2c"
+        strokeWidth="0.8"
       />
-      <circle cx="17.5" cy="18.2" r="2.4" fill="#3b8cff" />
-      <circle cx="26.5" cy="18.2" r="2.4" fill="#3b8cff" />
+      <rect x="15.4" y="15.6" width="4" height="5" rx="1.8" fill="#f27aa0" />
+      <rect x="24.6" y="15.6" width="4" height="5" rx="1.8" fill="#f27aa0" />
       <path
         className={styles.glow}
         d="M43 22a21 6 0 0 1 -42 0"
         fill="none"
-        stroke="#d2f2ff"
+        stroke="#ff9cbd"
         strokeWidth="2"
       />
-    </svg>
-  );
-}
-
-const SAUCER_LIGHTS = [8, 15, 22, 29, 36];
-
-function SaucerDrone() {
-  return (
-    <svg viewBox="0 0 44 44" width="44" height="44" overflow="visible">
-      <defs>
-        <linearGradient id="saucer-dome" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#ffffff" />
-          <stop offset="1" stopColor="#8d97a4" />
-        </linearGradient>
-        <linearGradient id="saucer-rim" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#e6ebf1" />
-          <stop offset="0.5" stopColor="#9aa4b1" />
-          <stop offset="1" stopColor="#4a525e" />
-        </linearGradient>
-        <radialGradient id="saucer-beam" cx="0.5" cy="0" r="1">
-          <stop offset="0" stopColor="#5cb2ff" stopOpacity="0.55" />
-          <stop offset="1" stopColor="#5cb2ff" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <ellipse
-        className={styles.glow}
-        cx="22"
-        cy="36"
-        rx="12"
-        ry="10"
-        fill="url(#saucer-beam)"
-      />
-      <ellipse cx="22" cy="27" rx="20" ry="6" fill="url(#saucer-rim)" />
-      <ellipse
-        cx="22"
-        cy="25.6"
-        rx="19"
-        ry="4.4"
-        fill="none"
-        stroke="#fff"
-        strokeOpacity="0.35"
-        strokeWidth="0.8"
-      />
-      {SAUCER_LIGHTS.map((x, i) => (
-        <circle
-          key={x}
-          className={styles.lights}
-          style={{ animationDelay: `${i * 0.15}s` }}
-          cx={x}
-          cy={27 + 3.6 * Math.sqrt(1 - ((x - 22) / 20) ** 2)}
-          r="1.3"
-          fill="#7cc8ff"
-        />
-      ))}
-      <path d="M10 25a12 11 0 0 1 24 0Z" fill="url(#saucer-dome)" />
-      <rect x="13.5" y="17" width="17" height="6" rx="3" fill="#090c12" />
-      <circle cx="19" cy="20" r="1.7" fill="#3b8cff" />
-      <circle cx="25" cy="20" r="1.7" fill="#3b8cff" />
     </svg>
   );
 }
@@ -624,7 +608,7 @@ export function ClimbingRobot() {
         </div>
 
         <div className={styles.drones}>
-          {[RingDrone, SaucerDrone].map((Art, i) => (
+          {[CubeDrone, OrbDrone].map((Art, i) => (
             <div
               key={i}
               ref={(el) => {
