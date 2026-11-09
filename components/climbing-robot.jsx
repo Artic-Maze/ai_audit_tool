@@ -156,81 +156,116 @@ const RATE = {
   thrust: 10,
 };
 
-// The drones: glossy silver orbs with a visor and glowing blue eyes. One has
-// a ring of light around it, the other a glowing band. Each is drawn on a
-// 44 × 44 box centred on its position.
-function OrbDefs({ id }) {
-  return (
-    <defs>
-      <radialGradient id={`${id}-shell`} cx="0.36" cy="0.3" r="0.75">
-        <stop offset="0" stopColor="#ffffff" />
-        <stop offset="0.35" stopColor="#c9d2de" />
-        <stop offset="0.8" stopColor="#5d6878" />
-        <stop offset="1" stopColor="#2b323d" />
-      </radialGradient>
-      <clipPath id={`${id}-clip`}>
-        <ellipse cx="22" cy="23" rx="13" ry="15" />
-      </clipPath>
-    </defs>
-  );
-}
-
-function Visor() {
-  return (
-    <>
-      <rect x="13" y="12" width="18" height="8" rx="4" fill="#0b1018" />
-      <rect x="15.5" y="14" width="4.5" height="3.2" rx="1.6" fill="#7cc8ff" />
-      <rect x="24" y="14" width="4.5" height="3.2" rx="1.6" fill="#7cc8ff" />
-    </>
-  );
-}
-
+// The drones, each drawn on a 44 × 44 box centred on its position. The
+// first is a chrome orb with a visor, round blue eyes, a ring of light and
+// a rocket flame; the second a little flying saucer with running lights.
 function RingDrone() {
   return (
-    <svg viewBox="0 0 44 44" width="44" height="44">
-      <OrbDefs id="ring-drone" />
+    <svg viewBox="0 0 44 44" width="44" height="44" overflow="visible">
+      <defs>
+        <radialGradient id="ring-drone-shell" cx="0.38" cy="0.3" r="0.78">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.3" stopColor="#d5dbe3" />
+          <stop offset="0.75" stopColor="#7d8794" />
+          <stop offset="1" stopColor="#3a414c" />
+        </radialGradient>
+        <linearGradient id="ring-drone-flame" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fff4c2" />
+          <stop offset="0.35" stopColor="#ffb547" />
+          <stop offset="1" stopColor="#ff6a1a" stopOpacity="0" />
+        </linearGradient>
+      </defs>
       <path
-        d="M2 25a20 5 0 0 1 40 0"
-        fill="none"
-        stroke="#9fe0ff"
-        strokeWidth="1.4"
-        opacity="0.7"
+        className={styles.flame}
+        d="M18.6 35 Q22 60 25.4 35 Z"
+        fill="url(#ring-drone-flame)"
       />
-      <ellipse cx="22" cy="23" rx="13" ry="15" fill="url(#ring-drone-shell)" />
-      <g clipPath="url(#ring-drone-clip)" fill="#1d232c" opacity="0.85">
-        <rect x="8" y="24" width="28" height="2.6" />
-        <rect x="8" y="29" width="28" height="2.6" />
-        <rect x="8" y="34" width="28" height="2.6" />
-      </g>
-      <Visor />
+      <rect x="18.5" y="32" width="7" height="4" rx="1.5" fill="#2a2f37" />
+      <path
+        d="M1 22a21 6 0 0 1 42 0"
+        fill="none"
+        stroke="#8fd8ff"
+        strokeWidth="1.5"
+        opacity="0.6"
+      />
+      <circle cx="22" cy="21" r="13" fill="url(#ring-drone-shell)" />
+      <rect x="10" y="13.5" width="24" height="9" rx="4.5" fill="#090c12" />
+      <rect
+        x="12"
+        y="14.4"
+        width="10"
+        height="1.6"
+        rx="0.8"
+        fill="#fff"
+        opacity="0.18"
+      />
+      <circle cx="17.5" cy="18.2" r="2.4" fill="#3b8cff" />
+      <circle cx="26.5" cy="18.2" r="2.4" fill="#3b8cff" />
       <path
         className={styles.glow}
-        d="M42 25a20 5 0 0 1 -40 0"
+        d="M43 22a21 6 0 0 1 -42 0"
         fill="none"
-        stroke="#c4efff"
-        strokeWidth="1.8"
+        stroke="#d2f2ff"
+        strokeWidth="2"
       />
     </svg>
   );
 }
 
-function BandDrone() {
+const SAUCER_LIGHTS = [8, 15, 22, 29, 36];
+
+function SaucerDrone() {
   return (
-    <svg viewBox="0 0 44 44" width="44" height="44">
-      <OrbDefs id="band-drone" />
-      <ellipse cx="22" cy="23" rx="13" ry="15" fill="url(#band-drone-shell)" />
-      <g clipPath="url(#band-drone-clip)">
-        <rect x="8" y="33" width="28" height="2.4" fill="#1d232c" />
-        <rect
-          className={styles.glow}
-          x="8"
-          y="24.5"
-          width="28"
-          height="3"
-          fill="#c4efff"
+    <svg viewBox="0 0 44 44" width="44" height="44" overflow="visible">
+      <defs>
+        <linearGradient id="saucer-dome" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#8d97a4" />
+        </linearGradient>
+        <linearGradient id="saucer-rim" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#e6ebf1" />
+          <stop offset="0.5" stopColor="#9aa4b1" />
+          <stop offset="1" stopColor="#4a525e" />
+        </linearGradient>
+        <radialGradient id="saucer-beam" cx="0.5" cy="0" r="1">
+          <stop offset="0" stopColor="#5cb2ff" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#5cb2ff" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <ellipse
+        className={styles.glow}
+        cx="22"
+        cy="36"
+        rx="12"
+        ry="10"
+        fill="url(#saucer-beam)"
+      />
+      <ellipse cx="22" cy="27" rx="20" ry="6" fill="url(#saucer-rim)" />
+      <ellipse
+        cx="22"
+        cy="25.6"
+        rx="19"
+        ry="4.4"
+        fill="none"
+        stroke="#fff"
+        strokeOpacity="0.35"
+        strokeWidth="0.8"
+      />
+      {SAUCER_LIGHTS.map((x, i) => (
+        <circle
+          key={x}
+          className={styles.lights}
+          style={{ animationDelay: `${i * 0.15}s` }}
+          cx={x}
+          cy={27 + 3.6 * Math.sqrt(1 - ((x - 22) / 20) ** 2)}
+          r="1.3"
+          fill="#7cc8ff"
         />
-      </g>
-      <Visor />
+      ))}
+      <path d="M10 25a12 11 0 0 1 24 0Z" fill="url(#saucer-dome)" />
+      <rect x="13.5" y="17" width="17" height="6" rx="3" fill="#090c12" />
+      <circle cx="19" cy="20" r="1.7" fill="#3b8cff" />
+      <circle cx="25" cy="20" r="1.7" fill="#3b8cff" />
     </svg>
   );
 }
@@ -589,7 +624,7 @@ export function ClimbingRobot() {
         </div>
 
         <div className={styles.drones}>
-          {[RingDrone, BandDrone].map((Art, i) => (
+          {[RingDrone, SaucerDrone].map((Art, i) => (
             <div
               key={i}
               ref={(el) => {
