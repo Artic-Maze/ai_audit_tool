@@ -68,7 +68,7 @@
   position: absolute;
   left: -3.5px;
   top: 20px;
-  bottom: 26px;
+  bottom: 86px;
   width: 7px;
   border-radius: 4px;
   background: repeating-linear-gradient(155deg, #9a806c 0 3px, #5e4c40 3px 6px);
@@ -80,7 +80,7 @@
 .knot {
   position: absolute;
   left: -7px;
-  bottom: 14px;
+  bottom: 76px; /* The robot sits on it at the bottom of the page. */
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -91,7 +91,7 @@
 .fray {
   position: absolute;
   left: -4px;
-  bottom: 0;
+  bottom: 60px;
   width: 8px;
   height: 16px;
   background: repeating-linear-gradient(
@@ -149,7 +149,7 @@
 /* Sparks from the hands while sliding down. */
 .spark {
   position: absolute;
-  display: var(--robot-sparks, none);
+  display: none;
   border-radius: 50%;
   background: #ffb3cb;
   box-shadow: 0 0 10px 3px #e0517f;
@@ -174,7 +174,7 @@
 .antenna {
   position: absolute;
   left: -1.5px;
-  top: 14px;
+  top: -44px;
   width: 3px;
   height: 14px;
   background: #3a3330;
@@ -183,7 +183,7 @@
 .antennaTip {
   position: absolute;
   left: -4px;
-  top: 9px;
+  top: -49px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -207,7 +207,10 @@
 /* Squints while sliding down. */
 .eye {
   width: 6px;
-  height: var(--robot-eye-h, 8px);
+  height: 8px;
+  transition:
+    height 0.15s,
+    border-radius 0.15s;
   border-radius: 3px;
   background: #f27aa0;
   box-shadow: 0 0 6px #e0517f;
@@ -326,7 +329,79 @@
 @media (prefers-reduced-motion: reduce) {
   .sway,
   .spark,
-  .eye {
+  .eye,
+  .trail span {
     animation: none;
   }
+}
+
+/* Moods, set by the component on .lane: data-mode is idle, up, down, slide
+   or sit; data-happy is true while waving. */
+
+.lane[data-mode="slide"] .spark {
+  display: block;
+}
+
+.lane[data-mode="slide"] .eye {
+  height: 3px;
+}
+
+.lane[data-happy="true"] .eye {
+  height: 5px;
+  border-radius: 4px 4px 1px 1px;
+}
+
+/* Eyes glance the way the head turns. */
+.eyes {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transform: translateX(var(--robot-eyes-x, 0px));
+}
+
+/* Speed lines above the robot while it slides. */
+.trail {
+  position: absolute;
+  left: -14px;
+  top: -150px;
+  display: flex;
+  justify-content: space-between;
+  width: 28px;
+  height: 140px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  mask-image: linear-gradient(transparent, black 45%, transparent);
+}
+
+.trail span {
+  width: 2px;
+  background: repeating-linear-gradient(
+    transparent 0 12px,
+    rgb(255 179 203 / 0.55) 12px 26px
+  );
+  animation: rush 0.28s linear infinite;
+}
+
+.lane[data-mode="slide"] .trail {
+  opacity: 1;
+}
+
+@keyframes rush {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 -26px;
+  }
+}
+
+/* The area that makes the robot wave on hover. Only this takes the pointer:
+   the robot sits in the page margin, so it never covers content. */
+.hit {
+  position: absolute;
+  left: -42px;
+  top: -12px;
+  width: 84px;
+  height: 232px;
+  pointer-events: auto;
 }
