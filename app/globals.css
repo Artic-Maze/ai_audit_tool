@@ -9,6 +9,7 @@
   --color-growth: var(--growth);
   --color-signal: var(--signal);
   --color-paper: var(--paper);
+  --color-faint: var(--faint);
   --color-status-good: var(--status-good);
   --color-status-warning: var(--status-warning);
   --color-status-serious: var(--status-serious);
@@ -57,15 +58,19 @@
 }
 
 :root {
-  /* GrowthLens brand palette */
-  --ink: #11211b;
-  --growth: #1a7f47;
-  --signal: #2bc06d;
-  --paper: #f6f8f5;
+  /* GrowthLens palette, from the landing page design: warm near-black
+     surfaces, off-white text and a pink accent. The app is dark only. */
+  color-scheme: dark;
 
-  /* Status colors (good -> critical) for report meters and badges. Fixed, not
-     brand colors; warning and serious are under 3:1 on white by design, so
-     they always appear with an icon and a text label. */
+  --paper: #060503; /* page background */
+  --ink: #f3eeea; /* text */
+  --growth: #e0517f; /* accent: icons, links, badges, ratings */
+  --signal: #e8638d; /* lighter accent, for tints and highlights */
+  --faint: #8a847e; /* quieter than muted-foreground, still 5.3:1 */
+
+  /* Status colors (good -> critical) for report meters and badges. Fixed,
+     not brand colors, and always shown with an icon and a text label. Each
+     is at least 4:1 on the page and on cards. */
   --status-good: #0ca30c;
   --status-warning: #fab219;
   --status-serious: #ec835a;
@@ -73,25 +78,24 @@
 
   --background: var(--paper);
   --foreground: var(--ink);
-  --card: #ffffff;
+  --card: #0b0a08;
   --card-foreground: var(--ink);
-  --popover: #ffffff;
+  --popover: #16120f;
   --popover-foreground: var(--ink);
-  /* White on Growth is 5.0:1. */
+  /* Text on pink is near-black: 5.5:1, where white would be 3.7:1. */
   --primary: var(--growth);
-  --primary-foreground: #ffffff;
-  --secondary: #eef1ef;
+  --primary-foreground: var(--paper);
+  --secondary: #16120f;
   --secondary-foreground: var(--ink);
-  --muted: #eef1ef;
-  --muted-foreground: #4a5a52;
-  --accent: #eef1ef;
+  --muted: #16120f;
+  --muted-foreground: #b8b1ab;
+  --accent: #16120f;
   --accent-foreground: var(--ink);
-  /* One step darker than shadcn's red: that one is 4.47:1 on Paper. */
-  --destructive: oklch(0.505 0.213 27.518);
-  --border: #dce3de;
-  --input: #dce3de;
-  /* Ink, not Growth: at the 50% alpha shadcn uses for rings, Growth fades
-     to 2:1 against Paper; Ink stays above 3:1. */
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: #1e1b18;
+  --input: #221e1b;
+  /* Ink, not pink: at the 50% alpha shadcn uses for rings, pink fades to
+     2:1 against the page; Ink stays above 4:1. */
   --ring: var(--ink);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -109,40 +113,6 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -151,6 +121,22 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
+    @apply bg-background font-sans;
   }
+}
+
+/* The call-to-action style from the landing design: a dark fill inside a
+   warm grey to pink gradient border. It's unlayered, so it wins over utility
+   classes such as the button's bg-clip-padding. */
+.btn-gradient {
+  --btn-fill: #2a1c1d;
+  border-color: transparent;
+  background:
+    linear-gradient(var(--btn-fill), var(--btn-fill)) padding-box,
+    linear-gradient(100deg, #7a6a64, var(--growth)) border-box;
+  color: var(--foreground);
+}
+
+.btn-gradient:hover {
+  --btn-fill: #3a2426;
 }

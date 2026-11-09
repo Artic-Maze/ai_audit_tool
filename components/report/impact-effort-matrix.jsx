@@ -131,13 +131,13 @@ export function ImpactEffortMatrix({ opportunities }) {
                 top: `calc(${100 - position(o.impact)}% + ${o.dy}px)`,
               }}
             >
-              <span className="flex size-6 items-center justify-center rounded-full bg-growth text-xs font-bold text-white ring-2 ring-card transition-transform group-hover:scale-110">
+              <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground ring-2 ring-card transition-transform group-hover:scale-110">
                 {o.n}
               </span>
               <span
                 aria-hidden="true"
                 className={cn(
-                  "pointer-events-none invisible absolute bottom-full mb-1 w-max max-w-56 rounded-lg bg-ink px-3 py-2 text-left text-xs text-white shadow-lg group-hover:visible group-focus-visible:visible",
+                  "pointer-events-none invisible absolute bottom-full mb-1 w-max max-w-56 rounded-lg border bg-popover px-3 py-2 text-left text-xs text-popover-foreground shadow-lg group-hover:visible group-focus-visible:visible",
                   o.effort <= 1
                     ? "left-0"
                     : o.effort >= 4

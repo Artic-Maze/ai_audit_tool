@@ -57,7 +57,7 @@ function Progress({ audit, connectionLost }) {
                   aria-hidden="true"
                 />
               ) : (
-                <Circle className="size-5 text-border" aria-hidden="true" />
+                <Circle className="size-5 text-faint" aria-hidden="true" />
               )}
               <span className={done || active ? "" : "text-muted-foreground"}>
                 {step.label}

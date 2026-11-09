@@ -56,7 +56,8 @@ export default function Home() {
             Free audit for Shopify stores
           </p>
           <h1 className="mt-3 text-4xl font-extrabold tracking-[-0.02em] text-balance sm:text-5xl">
-            Find where AI can grow your store
+            Find where AI can{" "}
+            <span className="text-faint">grow your store</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-pretty text-muted-foreground">
             Enter your store URL. We check your public storefront, score five
@@ -71,7 +72,7 @@ export default function Home() {
           </p>
         </section>
 
-        <section className="border-t bg-muted/40">
+        <section className="border-t">
           <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
             <h2 className="text-xl font-extrabold tracking-[-0.02em]">
               What we check

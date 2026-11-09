@@ -22,6 +22,13 @@ export const metadata = {
   applicationName: "GrowthLens",
 };
 
+// The app is dark only (see app/globals.css): tell the browser before the CSS
+// loads, and tint the mobile browser bar to match.
+export const viewport = {
+  colorScheme: "dark",
+  themeColor: "#060503",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${manrope.variable} ${geistMono.variable}`}>

@@ -56,7 +56,7 @@ export function NumberBadge({ n, className }) {
   return (
     <span
       className={cn(
-        "inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-growth text-xs font-bold text-white",
+        "inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground",
         className,
       )}
     >
@@ -164,7 +164,7 @@ export function Rating({ label, value }) {
             key={i}
             className={cn(
               "h-2.5 w-3.5 first:rounded-l-[3px] last:rounded-r-[3px]",
-              i <= value ? "bg-growth" : "bg-border",
+              i <= value ? "bg-growth" : "bg-muted-foreground/25",
             )}
           />
         ))}

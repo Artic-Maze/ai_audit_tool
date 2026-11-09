@@ -4,7 +4,7 @@ export function BookCall({ url }) {
   return (
     <section
       aria-labelledby="book-call-title"
-      className="mt-14 rounded-2xl bg-ink p-6 text-white sm:p-8"
+      className="mt-14 rounded-2xl border bg-card p-6 sm:p-8"
     >
       <h2
         id="book-call-title"
@@ -12,7 +12,7 @@ export function BookCall({ url }) {
       >
         Want this built?
       </h2>
-      <p className="mt-2 max-w-xl text-white/80">
+      <p className="mt-2 max-w-xl text-muted-foreground">
         Book a call to talk through these opportunities and how to build them
         for your store.
       </p>
@@ -20,7 +20,7 @@ export function BookCall({ url }) {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-6 inline-flex h-11 items-center gap-2 rounded-lg bg-signal px-5 font-bold text-ink outline-none hover:bg-white focus-visible:ring-3 focus-visible:ring-white/60"
+        className="btn-gradient mt-6 inline-flex h-11 items-center gap-2 rounded-lg border px-5 font-bold outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         Book a call
         <ArrowUpRight aria-hidden="true" className="size-4" />
