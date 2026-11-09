@@ -197,6 +197,17 @@
   opacity: 1;
 }
 
+/* While the jetpack flies it up, the speed lines trail below. */
+.lane[data-mode="fly"] .trail {
+  opacity: 1;
+  left: -66px;
+  top: 70px;
+}
+
+.lane[data-mode="fly"] .trail span {
+  animation-direction: reverse;
+}
+
 /* The area that makes the robot wave on hover. Only this takes the pointer:
    the robot sits in the page margin, so it never covers content. */
 .hit {

@@ -221,6 +221,45 @@ export function createRobot(canvas) {
   add(rounded(18, 3, 2, 1), glow, body, BX, -46, 16.4);
   add(rounded(30, 28, 12, 6), white, body, BX, -50, -21);
   add(rounded(3, 14, 1.6, 0.7), glow, body, BX, -50, -27.6);
+
+  // Jetpack: two nozzles under the backpack, with flames and a warm light
+  // while flying.
+  const flameOuter = new THREE.MeshBasicMaterial({
+    color: 0xff8a2a,
+    transparent: true,
+    opacity: 0.85,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const flameInner = flameOuter.clone();
+  flameInner.color.set(0xfff1b8);
+  disposables.push(flameOuter, flameInner);
+  const flames = [];
+  for (const x of [BX - 8, BX + 8]) {
+    add(new THREE.CylinderGeometry(4, 5.5, 8, 16), dark, body, x, -67, -22);
+    const flame = new THREE.Group();
+    flame.position.set(x, -71, -22);
+    body.add(flame);
+    add(
+      new THREE.ConeGeometry(5, 26, 16, 1, true),
+      flameOuter,
+      flame,
+      0,
+      -13,
+    ).rotation.x = Math.PI;
+    add(
+      new THREE.ConeGeometry(2.6, 15, 12, 1, true),
+      flameInner,
+      flame,
+      0,
+      -7.5,
+    ).rotation.x = Math.PI;
+    flames.push(flame);
+  }
+  const thruster = new THREE.PointLight(0xff9a3c, 0, 140, 2);
+  thruster.position.set(BX, -84, -12);
+  body.add(thruster);
   add(new THREE.CylinderGeometry(15, 13, 10, 24), dark, body, BX, -70);
   add(rounded(40, 16, 28, 7), white, body, BX, -80);
   add(new THREE.BoxGeometry(41, 3.5, 29), dark, body, BX, -79);
@@ -312,6 +351,7 @@ export function createRobot(canvas) {
   const rest = new THREE.Vector3();
   const normal = new THREE.Vector3();
   const upperDir = new THREE.Vector3();
+  const flyAt = new THREE.Vector3();
 
   function pose(part, root, goal, poleAt, sizes) {
     solveLimb(root, goal, sizes, poleAt, part.mid, part.end);
@@ -334,7 +374,13 @@ export function createRobot(canvas) {
   function update(p, time, anchorY) {
     pivot.position.set(0, p.hiY, 0);
     pivot.rotation.z = rad(p.swing);
-    body.position.set(0, p.bob - p.hiY, 0);
+    // Flying: off the rope, a little to the left and forward.
+    body.position.set(-24 * p.fly, p.bob - p.hiY, 8 * p.fly);
+    flames.forEach((flame, i) => {
+      flame.visible = p.thrust > 0.02;
+      flame.scale.set(1, p.thrust * (0.85 + 0.15 * Math.sin(time * 47 + i)), 1);
+    });
+    thruster.intensity = 600 * p.thrust;
     body.rotation.y = rad(p.yaw);
     head.rotation.set(rad(p.headPitch), rad(p.headYaw), rad(p.headRoll));
     eyes.scale.y = p.eyes;
@@ -344,8 +390,9 @@ export function createRobot(canvas) {
 
     // The high hand grips the rope; the other grips it lower down, rests on
     // a knee while sitting, or waves.
-    target.set(0, p.hiY - p.bob, 0);
-    pole.set(26, -50, 8);
+    // While flying, both hands drop to the sides with the elbows back.
+    target.set(0, p.hiY - p.bob, 0).lerp(flyAt.set(BX + 30, -82, 2), p.fly);
+    pole.set(26, -50, 8).lerp(flyAt.set(BX + 40, -60, -30), p.fly);
     pose(arms.near, shoulders.near, target, pole, ARM);
     wave.set(
       BX - 46 + 5 * Math.sin(time * 10),
@@ -359,8 +406,12 @@ export function createRobot(canvas) {
     target
       .set(-REACH_Z * Math.sin(yaw), p.loY - p.bob, REACH_Z * Math.cos(yaw))
       .lerp(rest, p.rest)
-      .lerp(wave, p.wave);
-    pole.set(BX - 10, -84, 40).lerp(wave.set(BX - 60, -50, 10), p.wave);
+      .lerp(wave, p.wave)
+      .lerp(flyAt.set(BX - 32, -82, 2), p.fly);
+    pole
+      .set(BX - 10, -84, 40)
+      .lerp(wave.set(BX - 60, -50, 10), p.wave)
+      .lerp(flyAt.set(BX - 40, -60, -30), p.fly);
     pose(arms.far, shoulders.far, target, pole, ARM);
     for (const side of ["near", "far"]) {
       const arm = arms[side];
@@ -374,7 +425,10 @@ export function createRobot(canvas) {
     // Feet wrap the rope, or rest on the floor with the knees up.
     for (const side of ["near", "far"]) {
       const s = side === "near" ? "A" : "B";
-      target.set(p[`f${s}x`], p[`f${s}y`] - p.bob, p[`f${s}z`]);
+      // Flying, the legs dangle.
+      target
+        .set(p[`f${s}x`], p[`f${s}y`] - p.bob, p[`f${s}z`])
+        .lerp(flyAt.set(hips[side].x, -140, 4), p.fly);
       pole
         .set(hips[side].x + (side === "near" ? 6 : -6), -104, 40)
         .lerp(rest.set(hips[side].x, -40, 60), p.sit);

@@ -60,12 +60,15 @@ const REST = {
   sit: 0,
   rest: 0,
   wave: 0,
+  fly: 0,
+  thrust: 0,
 };
 
 // The pose a mode aims for. `phase` grows with the distance travelled and
 // drives the climbing cycle; `look` and `kick` are the seconds and progress
-// (0 to 1) of an idle look around and leg swing, or null.
-function poseFor({ mode, phase, vel, waving, look, kick, blink }) {
+// (0 to 1) of an idle look around and leg swing, or null; `caught` is the
+// seconds since it grabbed the rope after flying, or null.
+function poseFor({ mode, phase, vel, waving, look, kick, blink, caught }) {
   const t = { ...REST, eyes: blink ? 0.15 : 1 };
 
   if (mode === "up" || mode === "down") {
@@ -83,6 +86,9 @@ function poseFor({ mode, phase, vel, waving, look, kick, blink }) {
       fBz: -6 + 8 * Math.max(0, -c),
       headPitch: mode === "up" ? 10 : -10,
     });
+  } else if (mode === "fly") {
+    // Jetpack on, hands off the rope, looking up where it's going.
+    Object.assign(t, { fly: 1, thrust: 1, yaw: 10, headPitch: 14 });
   } else if (mode === "slide") {
     Object.assign(t, {
       hiY: 12,
@@ -122,6 +128,11 @@ function poseFor({ mode, phase, vel, waving, look, kick, blink }) {
     }
   }
 
+  // Just grabbed the rope after flying: a little dangle that dies away.
+  if (caught !== null) {
+    t.swing += 7 * Math.exp(-3 * caught) * Math.sin(9 * caught);
+  }
+
   if (waving) {
     // Let go with the lower hand and wave it, facing the visitor.
     t.wave = 1;
@@ -135,7 +146,15 @@ function poseFor({ mode, phase, vel, waving, look, kick, blink }) {
 }
 
 // How fast each value eases toward its target, per second.
-const RATE = { eyes: 30, headYaw: 6, headPitch: 6, headRoll: 6, sit: 5 };
+const RATE = {
+  eyes: 30,
+  headYaw: 6,
+  headPitch: 6,
+  headRoll: 6,
+  sit: 5,
+  fly: 8,
+  thrust: 10,
+};
 
 // The drones: glossy silver orbs with a visor and glowing blue eyes. One has
 // a ring of light around it, the other a glowing band. Each is drawn on a
@@ -239,6 +258,8 @@ export function ClimbingRobot() {
     let current = null;
     let vel = 0;
     let sliding = false;
+    let flying = false;
+    let catchAt = -Infinity;
     let phase = 0;
     let mode = "idle";
     let still = 0;
@@ -377,9 +398,12 @@ export function ClimbingRobot() {
       const gap = goal.y - current;
       if (!sliding && gap > SLIDE_GAP) sliding = true;
       else if (sliding && gap < SLIDE_END) sliding = false;
+      // A fast scroll up: fire the jetpack and fly, then grab the rope again.
+      if (!flying && gap < -SLIDE_GAP) flying = true;
+      else if (flying && gap > -SLIDE_END) flying = false;
       const previous = current;
       if (reduce) current = goal.y;
-      else if (sliding) current += gap * 0.12;
+      else if (sliding || flying) current += gap * 0.12;
       else current += clamp(gap * 0.1, -CLIMB_UP, CLIMB_DOWN);
       const moved = current - previous;
       vel = vel * 0.8 + moved * 0.2;
@@ -392,13 +416,14 @@ export function ClimbingRobot() {
       const was = mode;
       if (moving) {
         const down = (Math.abs(vel) > 0.08 ? vel : gap) > 0;
-        mode = sliding ? "slide" : down ? "down" : "up";
+        mode = sliding ? "slide" : flying ? "fly" : down ? "down" : "up";
       } else if (still > 0.15 || reduce) {
         mode = goal.atBottom ? "sit" : "idle";
       }
       if (mode !== was) {
         look = null;
         kick = null;
+        if (was === "fly") catchAt = time;
         if (mode === "sit" && !reduce) waveUntil = time + 3.2;
         if (mode === "idle") nextLook = time + 1.5 + Math.random() * 2;
       }
@@ -431,6 +456,7 @@ export function ClimbingRobot() {
         look: look === null ? null : time - look,
         kick: kick === null ? null : (time - kick) / 1.8,
         blink: time < blinkUntil,
+        caught: time - catchAt < 1.2 ? time - catchAt : null,
       });
       let pending = 0;
       for (const [key, to] of Object.entries(goalPose)) {
@@ -454,16 +480,23 @@ export function ClimbingRobot() {
         (waving && !reduce) ||
         look !== null ||
         kick !== null ||
-        time < blinkUntil;
+        time < blinkUntil ||
+        time - catchAt < 1.2;
       if (busy || !drawn) {
         robot.update(value, reduce ? 0 : time, current);
         drawn = true;
       }
       // The drones set off once the page has been still for 5 seconds.
       const roam = !reduce && calm && time - lastScroll > 5;
-      const flying = flyDrones(time, dt, roam, current - window.scrollY, ropeX);
+      const dronesBusy = flyDrones(
+        time,
+        dt,
+        roam,
+        current - window.scrollY,
+        ropeX,
+      );
 
-      if (busy || flying) {
+      if (busy || dronesBusy) {
         schedule();
       } else if (!reduce) {
         // Asleep until the next blink, look around or leg swing.
