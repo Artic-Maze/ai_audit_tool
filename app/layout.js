@@ -1,5 +1,6 @@
 import { Geist_Mono, Manrope } from "next/font/google";
 import "./globals.css";
+import { ClimbingRobot } from "@/components/climbing-robot";
 
 const manrope = Manrope({
   variable: "--font-sans",
@@ -24,7 +25,12 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${manrope.variable} ${geistMono.variable}`}>
-      <body className="antialiased">{children}</body>
+      {/* relative: the climbing robot hangs from the top of the body and
+          its rope runs the full height of the page. */}
+      <body className="relative antialiased">
+        {children}
+        <ClimbingRobot />
+      </body>
     </html>
   );
 }

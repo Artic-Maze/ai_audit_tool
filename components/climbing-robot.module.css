@@ -1,20 +1,29 @@
-/* The rope hangs in the right margin: 58px outside the page's 64rem content
-   column, and never closer than 36px to the window edge. */
+/* Covers the page (its nearest positioned ancestor, <body>) and clips the
+   robot to it, so a wide swing never adds a horizontal scrollbar. */
+.layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  overflow: clip;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Not enough margin for it on smaller screens, and no place for it in print. */
+@media (max-width: 1180px), print {
+  .layer {
+    display: none;
+  }
+}
+
+/* The rope hangs in the right margin: 58px outside the 64rem content column
+   every page uses, and never closer than 36px to the window edge. */
 .lane {
   position: absolute;
   top: 0;
   bottom: 0;
   right: max(36px, calc((100% - 64rem) / 2 - 58px));
   width: 0;
-  pointer-events: none;
-  z-index: 5;
-}
-
-/* Not enough margin for it on smaller screens. */
-@media (max-width: 1180px) {
-  .lane {
-    display: none;
-  }
 }
 
 /* Rope */

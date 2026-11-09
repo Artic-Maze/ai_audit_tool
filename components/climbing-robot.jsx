@@ -4,10 +4,13 @@ import { useEffect, useRef } from "react";
 import styles from "./climbing-robot.module.css";
 
 /*
- * A small robot hanging from a rope in the right margin of the page. It
+ * A small robot hanging from a rope in the right margin of every page. It
  * slides down the rope as the page scrolls down and climbs back up as it
  * scrolls up, swinging with the speed. Decorative only, and pure CSS 3D:
  * every body part is a box of six faces.
+ *
+ * It's rendered once, in the root layout, and covers its nearest positioned
+ * ancestor (<body>), so that has to span the whole page.
  *
  * The scroll loop only writes CSS custom properties on the lane element, so
  * React renders the robot once and never re-renders it while scrolling.
@@ -283,120 +286,131 @@ export function ClimbingRobot() {
       capture: true,
     });
     window.addEventListener("resize", schedule);
+    // Pages also change height without scrolling: a report finishing or
+    // unlocking, or a client-side navigation to another page.
+    const heightWatcher = new ResizeObserver(schedule);
+    heightWatcher.observe(document.body);
     schedule();
 
     return () => {
       window.removeEventListener("scroll", schedule, { capture: true });
       window.removeEventListener("resize", schedule);
+      heightWatcher.disconnect();
       cancelAnimationFrame(frame);
     };
   }, []);
 
   return (
-    <div ref={laneRef} className={styles.lane} style={IDLE} aria-hidden="true">
-      <div className={styles.bracket}>
-        <span className={styles.screw} />
-        <span className={styles.screw} />
-      </div>
-      <div className={styles.ring} />
-      <div className={styles.rope} />
-      <div className={styles.knot} />
-      <div className={styles.fray} />
+    <div className={styles.layer} aria-hidden="true">
+      <div ref={laneRef} className={styles.lane} style={IDLE}>
+        <div className={styles.bracket}>
+          <span className={styles.screw} />
+          <span className={styles.screw} />
+        </div>
+        <div className={styles.ring} />
+        <div className={styles.rope} />
+        <div className={styles.knot} />
+        <div className={styles.fray} />
 
-      <div className={styles.hanger}>
-        <div className={styles.sway}>
-          <div className={styles.swing}>
-            <div className={`${styles.part} ${styles.rig}`}>
-              <span className={`${styles.spark} ${styles.sparkA}`} />
-              <span className={`${styles.spark} ${styles.sparkB}`} />
-              <div className={styles.antenna} />
-              <div className={styles.antennaTip} />
+        <div className={styles.hanger}>
+          <div className={styles.sway}>
+            <div className={styles.swing}>
+              <div className={`${styles.part} ${styles.rig}`}>
+                <span className={`${styles.spark} ${styles.sparkA}`} />
+                <span className={`${styles.spark} ${styles.sparkB}`} />
+                <div className={styles.antenna} />
+                <div className={styles.antennaTip} />
 
-              <Leg
-                x={-11}
-                hip="var(--robot-leg-l)"
-                knee="var(--robot-knee-l)"
-              />
-              <Leg x={11} hip="var(--robot-leg-r)" knee="var(--robot-knee-r)" />
+                <Leg
+                  x={-11}
+                  hip="var(--robot-leg-l)"
+                  knee="var(--robot-knee-l)"
+                />
+                <Leg
+                  x={11}
+                  hip="var(--robot-leg-r)"
+                  knee="var(--robot-knee-r)"
+                />
 
-              {/* Hips */}
-              <Box
-                x={-22}
-                y={99}
-                w={44}
-                h={28}
-                d={22}
-                colors={BODY}
-                front={
-                  <>
-                    <div className={styles.brief} />
-                    <div className={styles.belt} />
-                  </>
-                }
-              />
-              {/* Chest */}
-              <Box
-                x={-27}
-                y={64}
-                w={54}
-                h={36}
-                d={26}
-                colors={BODY}
-                front={
-                  <>
-                    <div className={styles.collar} />
-                    <div
-                      className={styles.stripe}
-                      style={{ left: 21, height: 14 }}
-                    />
-                    <div
-                      className={styles.stripe}
-                      style={{ left: 31, height: 16 }}
-                    />
-                    <svg
-                      className={styles.badge}
-                      width="12"
-                      height="10"
-                      viewBox="0 0 12 10"
-                    >
-                      <path
-                        d="M1 9L6 1l5 8M3.5 9L6 5l2.5 4"
-                        fill="none"
-                        stroke="#E8638D"
-                        strokeWidth="1.2"
+                {/* Hips */}
+                <Box
+                  x={-22}
+                  y={99}
+                  w={44}
+                  h={28}
+                  d={22}
+                  colors={BODY}
+                  front={
+                    <>
+                      <div className={styles.brief} />
+                      <div className={styles.belt} />
+                    </>
+                  }
+                />
+                {/* Chest */}
+                <Box
+                  x={-27}
+                  y={64}
+                  w={54}
+                  h={36}
+                  d={26}
+                  colors={BODY}
+                  front={
+                    <>
+                      <div className={styles.collar} />
+                      <div
+                        className={styles.stripe}
+                        style={{ left: 21, height: 14 }}
                       />
-                    </svg>
-                  </>
-                }
-              />
-              <Box x={-6} y={56} w={12} h={9} d={12} colors={NECK} />
-              {/* Head, with a visor for a face */}
-              <Box
-                x={-18}
-                y={26}
-                w={36}
-                h={32}
-                d={32}
-                colors={HEAD}
-                frontStyle={{ padding: "7px 5px" }}
-                front={
-                  <div className={styles.visor}>
-                    <span className={styles.eye} />
-                    <span className={styles.eye} />
-                  </div>
-                }
-              />
+                      <div
+                        className={styles.stripe}
+                        style={{ left: 31, height: 16 }}
+                      />
+                      <svg
+                        className={styles.badge}
+                        width="12"
+                        height="10"
+                        viewBox="0 0 12 10"
+                      >
+                        <path
+                          d="M1 9L6 1l5 8M3.5 9L6 5l2.5 4"
+                          fill="none"
+                          stroke="#E8638D"
+                          strokeWidth="1.2"
+                        />
+                      </svg>
+                    </>
+                  }
+                />
+                <Box x={-6} y={56} w={12} h={9} d={12} colors={NECK} />
+                {/* Head, with a visor for a face */}
+                <Box
+                  x={-18}
+                  y={26}
+                  w={36}
+                  h={32}
+                  d={32}
+                  colors={HEAD}
+                  frontStyle={{ padding: "7px 5px" }}
+                  front={
+                    <div className={styles.visor}>
+                      <span className={styles.eye} />
+                      <span className={styles.eye} />
+                    </div>
+                  }
+                />
 
-              <Arm
-                x={-30}
-                shoulder="var(--robot-arm-l)"
-                elbow="var(--robot-elbow-l)"
-              />
-              <Arm
-                x={30}
-                shoulder="var(--robot-arm-r)"
-                elbow="var(--robot-elbow-r)"
-              />
+                <Arm
+                  x={-30}
+                  shoulder="var(--robot-arm-l)"
+                  elbow="var(--robot-elbow-l)"
+                />
+                <Arm
+                  x={30}
+                  shoulder="var(--robot-arm-r)"
+                  elbow="var(--robot-elbow-r)"
+                />
+              </div>
             </div>
           </div>
         </div>
