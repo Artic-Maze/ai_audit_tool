@@ -23,7 +23,7 @@ const HIP = { y: -84, near: BX + 9, far: BX - 9 };
 const ARM = [30, 28]; // shoulder to elbow, elbow to wrist
 const LEG = [27, 26]; // hip to knee, knee to ankle
 const REACH_Z = 18; // the lower hand grips the front of the rope
-const BRAID = 14; // rope texture repeat, px
+const BRAID = 9; // rope texture repeat, px
 
 const rad = THREE.MathUtils.degToRad;
 const UP = new THREE.Vector3(0, 1, 0);
@@ -138,10 +138,10 @@ export function createRobot(canvas) {
 
   // The rope, braided, faded at the ends into the CSS rope behind the canvas.
   const braid = canvasTexture(32, 32, (g) => {
-    g.fillStyle = "#a8773b";
+    g.fillStyle = "#222226";
     g.fillRect(0, 0, 32, 32);
     g.lineWidth = 7;
-    g.strokeStyle = "#d9ae6c";
+    g.strokeStyle = "#4b4b52";
     for (let i = -32; i <= 64; i += 16) {
       g.beginPath();
       g.moveTo(i, 32);
@@ -172,7 +172,7 @@ export function createRobot(canvas) {
     map: braid,
     alphaMap: fade,
     transparent: true,
-    roughness: 0.85,
+    roughness: 0.55,
   });
   const shadowMaterial = new THREE.MeshBasicMaterial({
     map: shadow,
@@ -215,7 +215,7 @@ export function createRobot(canvas) {
   pivot.add(body);
 
   add(
-    new THREE.CylinderGeometry(6, 6, VIEW.top - VIEW.bottom, 20, 1, true),
+    new THREE.CylinderGeometry(3, 3, VIEW.top - VIEW.bottom, 16, 1, true),
     ropeMaterial,
     root,
     0,

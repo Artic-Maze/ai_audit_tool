@@ -67,51 +67,49 @@
   width: 20px;
   height: 15px;
   box-sizing: border-box;
-  border: 3px solid #a8773b;
+  border: 3px solid #4a4a52;
   border-radius: 50%;
 }
 
-/* Braided, shaded like a cylinder. */
+/* Slim, dark and braided, with a faint highlight so it reads on black. */
 .rope {
   position: absolute;
-  left: -6px;
+  left: -3px;
   top: 21px;
   bottom: 26px;
-  width: 12px;
-  border-radius: 6px;
+  width: 6px;
+  border-radius: 3px;
   background:
     linear-gradient(
       90deg,
-      rgb(0 0 0 / 0.4),
-      transparent 35%,
-      rgb(255 255 255 / 0.2) 55%,
-      transparent 72%,
-      rgb(0 0 0 / 0.4)
+      rgb(0 0 0 / 0.5),
+      transparent 40%,
+      rgb(255 255 255 / 0.22) 55%,
+      transparent 75%
     ),
-    repeating-linear-gradient(135deg, #d9ae6c 0 5px, #a8773b 5px 10px);
-  box-shadow: 4px 0 10px rgb(0 0 0 / 0.5);
+    repeating-linear-gradient(135deg, #4b4b52 0 3px, #222226 3px 6px);
 }
 
 .knot {
   position: absolute;
-  left: -10px;
-  bottom: 12px;
-  width: 20px;
-  height: 18px;
+  left: -6px;
+  bottom: 14px;
+  width: 12px;
+  height: 11px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #d9ae6c, #8a5f2c);
+  background: radial-gradient(circle at 35% 35%, #5a5a62, #18181b);
 }
 
 .fray {
   position: absolute;
-  left: -5px;
+  left: -3px;
   bottom: 0;
-  width: 10px;
-  height: 14px;
+  width: 6px;
+  height: 15px;
   background: repeating-linear-gradient(
     90deg,
-    #b8874a 0 1px,
-    transparent 1px 2.5px
+    #3a3a40 0 1px,
+    transparent 1px 2px
   );
 }
 
