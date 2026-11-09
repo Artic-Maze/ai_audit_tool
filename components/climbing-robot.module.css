@@ -1,5 +1,5 @@
 /* Covers the page (its nearest positioned ancestor, <body>) and clips the
-   robot to it, so a wide swing never adds a horizontal scrollbar. */
+   robot to it, so it never adds a horizontal scrollbar. */
 .layer {
   position: absolute;
   inset: 0;
@@ -16,14 +16,22 @@
   }
 }
 
-/* The rope hangs in the right margin: 58px outside the 64rem content column
-   every page uses, and never closer than 36px to the window edge. */
+/* The rope hangs in the right margin with the robot to its left: 104px
+   outside the 64rem content column, and at least 30px from the window edge.
+   Narrower windows get a smaller robot. */
 .lane {
+  --robot-scale: 1;
   position: absolute;
   top: 0;
   bottom: 0;
-  right: max(36px, calc((100% - 64rem) / 2 - 58px));
+  right: max(30px, calc((100% - 64rem) / 2 - 104px));
   width: 0;
+}
+
+@media (max-width: 1399px) {
+  .lane {
+    --robot-scale: 0.8;
+  }
 }
 
 /* Rope */
@@ -54,54 +62,60 @@
 
 .ring {
   position: absolute;
-  left: -9px;
+  left: -10px;
   top: 9px;
-  width: 18px;
-  height: 14px;
+  width: 20px;
+  height: 15px;
   box-sizing: border-box;
-  border: 3px solid #e0517f;
+  border: 3px solid #a8773b;
   border-radius: 50%;
-  box-shadow: 0 0 10px rgb(224 81 127 / 0.35);
 }
 
+/* Braided, shaded like a cylinder. */
 .rope {
   position: absolute;
-  left: -3.5px;
-  top: 20px;
-  bottom: 86px;
-  width: 7px;
-  border-radius: 4px;
-  background: repeating-linear-gradient(155deg, #9a806c 0 3px, #5e4c40 3px 6px);
-  box-shadow:
-    inset -2px 0 2px rgb(0 0 0 / 0.45),
-    4px 0 10px rgb(0 0 0 / 0.6);
+  left: -6px;
+  top: 21px;
+  bottom: 26px;
+  width: 12px;
+  border-radius: 6px;
+  background:
+    linear-gradient(
+      90deg,
+      rgb(0 0 0 / 0.4),
+      transparent 35%,
+      rgb(255 255 255 / 0.2) 55%,
+      transparent 72%,
+      rgb(0 0 0 / 0.4)
+    ),
+    repeating-linear-gradient(135deg, #d9ae6c 0 5px, #a8773b 5px 10px);
+  box-shadow: 4px 0 10px rgb(0 0 0 / 0.5);
 }
 
 .knot {
   position: absolute;
-  left: -7px;
-  bottom: 76px; /* The robot sits on it at the bottom of the page. */
-  width: 14px;
-  height: 14px;
+  left: -10px;
+  bottom: 12px;
+  width: 20px;
+  height: 18px;
   border-radius: 50%;
-  background: #6e5a4c;
-  box-shadow: inset -2px -2px 3px rgb(0 0 0 / 0.5);
+  background: radial-gradient(circle at 35% 35%, #d9ae6c, #8a5f2c);
 }
 
 .fray {
   position: absolute;
-  left: -4px;
-  bottom: 60px;
-  width: 8px;
-  height: 16px;
+  left: -5px;
+  bottom: 0;
+  width: 10px;
+  height: 14px;
   background: repeating-linear-gradient(
     90deg,
-    #7a6656 0 1px,
-    transparent 1px 2px
+    #b8874a 0 1px,
+    transparent 1px 2.5px
   );
 }
 
-/* Robot. The --robot-* properties are set on .lane by the component. */
+/* Robot. --robot-top is set by the component. */
 
 .hanger {
   position: absolute;
@@ -109,41 +123,22 @@
   top: 0;
   width: 0;
   height: 0;
-  perspective: 900px;
-  transform: translateY(var(--robot-top));
-}
-
-/* A gentle sway from the hands, always on. */
-.sway {
-  transform-style: preserve-3d;
+  transform: translateY(var(--robot-top)) scale(var(--robot-scale));
   transform-origin: 0 0;
-  animation: sway 3.6s ease-in-out infinite;
+  visibility: hidden;
 }
 
-/* Swings out with the scroll speed. */
-.swing {
-  transform-style: preserve-3d;
-  transform-origin: 0 0;
-  transform: var(--robot-swing);
+.lane[data-ready="true"] .hanger {
+  visibility: visible;
 }
 
-.part {
+/* Matches VIEW in robot-model.js. */
+.canvas {
   position: absolute;
-  transform-style: preserve-3d;
-}
-
-.rig {
-  left: 0;
-  top: 0;
-  transform: var(--robot-rig);
-}
-
-.face {
-  position: absolute;
-  left: 0;
-  top: 0;
-  box-sizing: border-box;
-  border: 1px solid rgb(255 255 255 / 0.07);
+  left: -120px;
+  top: -46px;
+  width: 170px;
+  height: 250px;
 }
 
 /* Sparks from the hands while sliding down. */
@@ -151,156 +146,66 @@
   position: absolute;
   display: none;
   border-radius: 50%;
-  background: #ffb3cb;
-  box-shadow: 0 0 10px 3px #e0517f;
+  background: #d6ecff;
+  box-shadow: 0 0 10px 3px #4fa3ff;
 }
 
 .sparkA {
-  left: -12px;
-  top: 0;
+  left: -6px;
+  top: -16px;
   width: 6px;
   height: 6px;
   animation: spark 0.18s linear infinite;
 }
 
 .sparkB {
-  left: 7px;
-  top: 6px;
+  left: 3px;
+  top: -6px;
   width: 5px;
   height: 5px;
   animation: spark 0.22s linear infinite;
 }
 
-.antenna {
-  position: absolute;
-  left: -1.5px;
-  top: -44px;
-  width: 3px;
-  height: 14px;
-  background: #3a3330;
+.lane[data-mode="slide"] .spark {
+  display: block;
 }
 
-.antennaTip {
+/* Speed lines beside the robot while it slides. */
+.trail {
   position: absolute;
-  left: -4px;
-  top: -49px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #e8638d;
-  box-shadow: 0 0 10px #e0517f;
-}
-
-.visor {
-  box-sizing: content-box;
-  width: 100%;
-  height: 14px;
+  left: -112px;
+  top: -70px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border: 1px solid #3a2a2c;
-  border-radius: 5px;
-  background: #060503;
+  justify-content: space-between;
+  width: 30px;
+  height: 170px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  mask-image: linear-gradient(transparent, black 40%, transparent);
 }
 
-/* Squints while sliding down. */
-.eye {
-  width: 6px;
-  height: 8px;
-  transition:
-    height 0.15s,
-    border-radius 0.15s;
-  border-radius: 3px;
-  background: #f27aa0;
-  box-shadow: 0 0 6px #e0517f;
-  animation: blink 4s infinite;
-}
-
-.collar {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 18px;
-  height: 8px;
-  margin-left: -9px;
-  border-radius: 0 0 9px 9px;
-  background: #262321;
-}
-
-.stripe {
-  position: absolute;
-  top: 7px;
+.trail span {
   width: 2px;
-  background: #e0517f;
+  background: repeating-linear-gradient(
+    transparent 0 12px,
+    rgb(140 196 255 / 0.6) 12px 30px
+  );
+  animation: rush 0.28s linear infinite;
 }
 
-.badge {
+.lane[data-mode="slide"] .trail {
+  opacity: 1;
+}
+
+/* The area that makes the robot wave on hover. Only this takes the pointer:
+   the robot sits in the page margin, so it never covers content. */
+.hit {
   position: absolute;
-  left: 21px;
-  top: 24px;
-}
-
-.brief {
-  box-sizing: content-box;
-  position: absolute;
-  left: 9px;
-  top: 3px;
-  width: 26px;
-  height: 13px;
-  border: 1px solid #2a2725;
-  border-radius: 3px 3px 6px 6px;
-}
-
-.belt {
-  box-sizing: content-box;
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  height: 5px;
-  border-top: 1px solid #4a4542;
-  background: #2e2b29;
-}
-
-.waistband {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 3px;
-  background: #1a2133;
-}
-
-/* Belt buckle */
-.waistband::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 6px;
-  height: 3px;
-  margin-left: -3px;
-  background: #e0517f;
-}
-
-.cuff {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  height: 4px;
-  background: #e0517f;
-}
-
-@keyframes sway {
-  0%,
-  100% {
-    transform: rotateZ(-2.5deg);
-  }
-  50% {
-    transform: rotateZ(2.5deg);
-  }
+  left: -100px;
+  top: -40px;
+  width: 116px;
+  height: 190px;
+  pointer-events: auto;
 }
 
 @keyframes spark {
@@ -315,93 +220,18 @@
   }
 }
 
-@keyframes blink {
-  0%,
-  92%,
-  100% {
-    transform: scaleY(1);
-  }
-  95% {
-    transform: scaleY(0.1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sway,
-  .spark,
-  .eye,
-  .trail span {
-    animation: none;
-  }
-}
-
-/* Moods, set by the component on .lane: data-mode is idle, up, down, slide
-   or sit; data-happy is true while waving. */
-
-.lane[data-mode="slide"] .spark {
-  display: block;
-}
-
-.lane[data-mode="slide"] .eye {
-  height: 3px;
-}
-
-.lane[data-happy="true"] .eye {
-  height: 5px;
-  border-radius: 4px 4px 1px 1px;
-}
-
-/* Eyes glance the way the head turns. */
-.eyes {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  transform: translateX(var(--robot-eyes-x, 0px));
-}
-
-/* Speed lines above the robot while it slides. */
-.trail {
-  position: absolute;
-  left: -14px;
-  top: -150px;
-  display: flex;
-  justify-content: space-between;
-  width: 28px;
-  height: 140px;
-  opacity: 0;
-  transition: opacity 0.2s;
-  mask-image: linear-gradient(transparent, black 45%, transparent);
-}
-
-.trail span {
-  width: 2px;
-  background: repeating-linear-gradient(
-    transparent 0 12px,
-    rgb(255 179 203 / 0.55) 12px 26px
-  );
-  animation: rush 0.28s linear infinite;
-}
-
-.lane[data-mode="slide"] .trail {
-  opacity: 1;
-}
-
 @keyframes rush {
   from {
     background-position: 0 0;
   }
   to {
-    background-position: 0 -26px;
+    background-position: 0 -30px;
   }
 }
 
-/* The area that makes the robot wave on hover. Only this takes the pointer:
-   the robot sits in the page margin, so it never covers content. */
-.hit {
-  position: absolute;
-  left: -42px;
-  top: -12px;
-  width: 84px;
-  height: 232px;
-  pointer-events: auto;
+@media (prefers-reduced-motion: reduce) {
+  .spark,
+  .trail span {
+    animation: none;
+  }
 }

@@ -4,31 +4,30 @@ import { useEffect, useRef } from "react";
 import styles from "./climbing-robot.module.css";
 
 /*
- * A small humanoid robot hanging from a rope in the right margin of every
- * page. Pure CSS 3D: every body part is a box of six faces.
+ * A small robot mascot hanging from a rope in the right margin of every
+ * page, drawn with Three.js (components/robot-model.js, loaded on demand).
  *
  * - Scrolling down, it climbs down hand under hand; scrolling fast, it
- *   slides, throwing sparks. Scrolling up, it climbs back up.
- * - When the page stops, it holds on, looks around and swings a leg now
- *   and then. Hovering over it (or clicking it) makes it wave.
- * - At the bottom of the page it sits on the knot at the end of the rope
- *   and waves.
+ *   slides, with sparks and speed lines. Scrolling up, it climbs back up.
+ * - When the page stops, it holds on, looks around, blinks and swings a
+ *   leg now and then. Hovering over it (or clicking it) makes it wave.
+ * - At the bottom of the page it sits on the floor by the rope and waves.
  *
  * It's rendered once, in the root layout, and covers its nearest positioned
- * ancestor (<body>), so that has to span the whole page. The animation loop
- * only writes CSS custom properties on the lane element, easing every joint
- * toward the current mode's pose so changes of mode never jump; React
- * renders the robot once and never re-renders it.
+ * ancestor (<body>), so that has to span the whole page. Every pose value
+ * eases toward the current mode's target, so changes of mode never jump,
+ * and the loop sleeps between idle moments.
  */
 
 // Where the robot hangs at the top of the page, and how far above the bottom
-// of the page it stops.
+// of the page it stops. The position is the anchor: the point on the rope
+// level with the centre of the head.
 const START_TOP = 90;
 const END_GAP = 320;
-// At the very bottom it sits on the knot instead: the knot's top is SEAT px
-// above the bottom of the page, and the hips end PELVIS px below the hands.
-const SEAT = 90;
-const PELVIS = 123;
+// At the very bottom it sits on the floor: the hips are PELVIS px below the
+// anchor, and the floor is FLOOR px above the bottom of the page.
+const PELVIS = 87;
+const FLOOR = 26;
 // Climbing speed in px per frame, down and up. When the page runs more than
 // SLIDE_GAP px ahead of the robot (a fast scroll down), it slides to catch
 // up instead, until it's within SLIDE_END px.
@@ -37,317 +36,126 @@ const CLIMB_UP = 5;
 const SLIDE_GAP = 220;
 const SLIDE_END = 40;
 
-// Face colors for each kind of box: front, back, sides, top, bottom.
-const LEGS = ["#2F3D5A", "#263149", "#232C42", "#3A4868", "#1A2133"];
-const SHOES = ["#E7E2DC", "#D6D0C9", "#CFC9C2", "#F3EEEA", "#E0517F"];
-const BODY = ["#3B3735", "#2E2B29", "#2B2826", "#4A4542", "#1E1C1A"];
-const NECK = ["#3A3532", "#2A2623", "#24201E", "#4A4542", "#151210"];
-const HEAD = ["#2A2623", "#1B1816", "#1D1A18", "#3A3532", "#100E0C"];
-const ARMS = ["#383432", "#2C2927", "#2A2725", "#44403D", "#1E1C1A"];
-const HANDS = ["#C98E6B", "#A8724F", "#B37C59", "#D49B78", "#9A6847"];
-const JOINTS = ["#26221F", "#1C1917", "#1F1C1A", "#34302D", "#141210"];
-const KNEES = ["#3A4868", "#2F3D5A", "#2A3550", "#46557A", "#1E2638"];
-
 const clamp = (value, lo, hi) => Math.min(hi, Math.max(lo, value));
 
-// The resting pose, in degrees (bob in px): both hands on the rope above the
-// head. The R arm and leg are on the right of the screen.
+// The resting pose: the high hand grips the rope beside the head (hiY) and
+// the other grips it at chest height (loY), feet A and B wrap the rope.
+// Angles in degrees, positions in px from the anchor (y up).
 const REST = {
-  swing: 0,
-  yaw: -28,
+  hiY: 2,
+  loY: -46,
   bob: 0,
-  headYaw: 0,
+  swing: 0,
+  yaw: 22,
+  headYaw: -10,
   headPitch: 0,
   headRoll: 0,
-  eyesX: 0,
-  armRZ: 170,
-  armRX: 0,
-  elbowR: -18,
-  armLZ: -170,
-  armLX: 0,
-  elbowL: 18,
-  legRZ: 0,
-  legRX: 6,
-  kneeR: -14,
-  legLZ: 0,
-  legLX: -2,
-  kneeL: -6,
+  eyes: 1,
+  fAx: -4,
+  fAy: -126,
+  fAz: 12,
+  fBx: -12,
+  fBy: -134,
+  fBz: -6,
+  sit: 0,
+  rest: 0,
+  wave: 0,
 };
 
 // The pose a mode aims for. `phase` grows with the distance travelled and
 // drives the climbing cycle; `look` and `kick` are the seconds and progress
 // (0 to 1) of an idle look around and leg swing, or null.
-function poseFor({ mode, phase, vel, time, waving, look, kick, reduce }) {
-  const t = { ...REST };
-  t.swing = clamp(-vel * 1.6, -14, 14);
-  t.yaw = -28 + 22 * Math.sin(phase * 0.12);
+function poseFor({ mode, phase, vel, waving, look, kick, blink }) {
+  const t = { ...REST, eyes: blink ? 0.15 : 1 };
 
   if (mode === "up" || mode === "down") {
-    // Hand over hand, the opposite leg lifting with each pull. Climbing down
-    // runs the same cycle the other way.
+    // Hand over hand, feet stepping in turn. Climbing down runs the same
+    // cycle the other way.
     const c = mode === "up" ? Math.sin(phase) : -Math.sin(phase);
-    const pullR = Math.max(0, -c);
-    const pullL = Math.max(0, c);
-    t.bob = 3 * Math.abs(c);
-    t.armRZ = 170 + 6 * pullR - 4 * pullL;
-    t.armLZ = -(170 + 6 * pullL - 4 * pullR);
-    t.armRX = 18 * c;
-    t.armLX = -18 * c;
-    t.elbowR = -18 - 26 * pullR;
-    t.elbowL = 18 + 26 * pullL;
-    t.legRX = 40 * Math.max(0, c) - 6;
-    t.legLX = 40 * Math.max(0, -c) - 6;
-    t.kneeR = -75 * Math.max(0, c) - 6;
-    t.kneeL = -75 * Math.max(0, -c) - 6;
-    t.headPitch = mode === "up" ? 10 : -10;
+    Object.assign(t, {
+      hiY: 2 + 10 * c,
+      loY: -46 - 10 * c,
+      bob: 2 * Math.abs(c),
+      swing: clamp(-vel * 0.6, -4, 4),
+      fAy: -128 + 12 * c,
+      fAz: 12 + 8 * Math.max(0, c),
+      fBy: -132 - 12 * c,
+      fBz: -6 + 8 * Math.max(0, -c),
+      headPitch: mode === "up" ? 10 : -10,
+    });
   } else if (mode === "slide") {
     Object.assign(t, {
-      armRZ: 175,
-      armLZ: -175,
-      elbowR: -8,
-      elbowL: 8,
-      legRZ: 6,
-      legLZ: -6,
-      legRX: -10,
-      legLX: -10,
-      kneeR: -4,
-      kneeL: -4,
-      headPitch: -14,
+      hiY: 12,
+      loY: -10,
+      swing: clamp(-vel * 0.3, -4, 4),
+      yaw: 14,
+      fAx: -3,
+      fAy: -136,
+      fAz: 6,
+      fBx: -8,
+      fBy: -138,
+      fBz: -4,
+      headPitch: -8,
     });
   } else if (mode === "sit") {
-    // On the knot: thighs forward, shins hanging, facing the visitor.
-    const dangle = kick === null ? 0 : 10 * Math.sin(2 * Math.PI * kick);
+    // On the floor, knees up, one hand still on the rope.
+    const dangle = kick === null ? 0 : 6 * Math.sin(2 * Math.PI * kick);
     Object.assign(t, {
-      swing: 0,
-      yaw: -10,
-      legRZ: 4,
-      legLZ: -4,
-      legRX: 80,
-      legLX: 80,
-      kneeR: -88 + dangle,
-      kneeL: -88 - dangle,
-      headYaw: 10,
-      headRoll: 5,
+      hiY: -18,
+      yaw: 10,
+      sit: 1,
+      rest: 1,
+      fAx: -20,
+      fAy: -81,
+      fAz: 30 + dangle,
+      fBx: -46,
+      fBy: -81,
+      fBz: 34 - dangle,
+      headRoll: 6,
     });
   } else {
     // Idle: look one way, then the other, then back; swing a leg.
-    if (look !== null) {
-      t.headYaw = look < 1 ? -34 : look < 2 ? 22 : 0;
-      t.eyesX = clamp(t.headYaw * 0.07, -2.5, 2.5);
-    }
+    if (look !== null) t.headYaw = look < 1 ? -40 : look < 2 ? 22 : -10;
     if (kick !== null) {
-      t.legLX = -2 + 22 * Math.sin(Math.PI * kick);
-      t.kneeL = -6 - 24 * Math.sin(Math.PI * kick);
+      t.fBz += 18 * Math.sin(Math.PI * kick);
+      t.fBy += 8 * Math.sin(Math.PI * kick);
     }
   }
 
   if (waving) {
-    // Let go with the left hand and wave it, face the visitor; the right
-    // hand keeps hold of the rope.
-    const sway = reduce ? 0 : Math.sin(time * 2.6);
-    const flap = reduce ? 0 : Math.sin(time * 10);
-    t.yaw = mode === "sit" ? -10 : -16;
-    t.armLZ = -210 + 6 * sway;
-    t.armLX = 0;
-    t.elbowL = 30 + 28 * flap;
+    // Let go with the lower hand and wave it, facing the visitor.
+    t.wave = 1;
+    t.rest = 0;
+    t.yaw = mode === "sit" ? 10 : 12;
     t.headYaw = -t.yaw;
     t.headPitch = 4;
     t.headRoll = 6;
-    t.eyesX = 0;
   }
   return t;
 }
 
-const deg = (n) => `${n.toFixed(2)}deg`;
-
-// The custom properties the robot's parts read (see the JSX below).
-function cssVars(top, v) {
-  return {
-    "--robot-top": `${top.toFixed(1)}px`,
-    "--robot-swing": `rotateZ(${deg(v.swing)})`,
-    "--robot-rig": `translateY(${v.bob.toFixed(2)}px) rotateY(${deg(v.yaw)})`,
-    "--robot-head": `rotateY(${deg(v.headYaw)}) rotateX(${deg(v.headPitch)}) rotateZ(${deg(v.headRoll)})`,
-    "--robot-eyes-x": `${v.eyesX.toFixed(2)}px`,
-    "--robot-arm-r": `rotateZ(${deg(v.armRZ)}) rotateX(${deg(v.armRX)})`,
-    "--robot-arm-l": `rotateZ(${deg(v.armLZ)}) rotateX(${deg(v.armLX)})`,
-    "--robot-elbow-r": `rotateZ(${deg(v.elbowR)})`,
-    "--robot-elbow-l": `rotateZ(${deg(v.elbowL)})`,
-    "--robot-leg-r": `rotateZ(${deg(v.legRZ)}) rotateX(${deg(v.legRX)})`,
-    "--robot-leg-l": `rotateZ(${deg(v.legLZ)}) rotateX(${deg(v.legLX)})`,
-    "--robot-knee-r": `rotateX(${deg(v.kneeR)})`,
-    "--robot-knee-l": `rotateX(${deg(v.kneeL)})`,
-  };
-}
-
-const IDLE = cssVars(START_TOP, REST);
-
-// A joint: children hang from this point and turn with it.
-function Joint({ x = 0, y = 0, transform, children }) {
-  return (
-    <div className={styles.part} style={{ left: x, top: y, transform }}>
-      {children}
-    </div>
-  );
-}
-
-// A w × h × d box with its top-left corner at (x, y), centred in depth.
-// `front` is drawn on the front face; `children` move with the box.
-function Box({
-  x,
-  y = 0,
-  w,
-  h,
-  d,
-  colors,
-  transform,
-  frontStyle,
-  front,
-  children,
-}) {
-  const [frontColor, backColor, sideColor, topColor, bottomColor] = colors;
-  const side = {
-    left: (w - d) / 2,
-    width: d,
-    height: h,
-    background: sideColor,
-  };
-  const cap = { top: (h - d) / 2, width: w, height: d };
-
-  return (
-    <div
-      className={styles.part}
-      style={{ left: x, top: y, width: w, height: h, transform }}
-    >
-      <div
-        className={styles.face}
-        style={{
-          width: w,
-          height: h,
-          background: frontColor,
-          transform: `translateZ(${d / 2}px)`,
-          ...frontStyle,
-        }}
-      >
-        {front}
-      </div>
-      <div
-        className={styles.face}
-        style={{
-          width: w,
-          height: h,
-          background: backColor,
-          transform: `rotateY(180deg) translateZ(${d / 2}px)`,
-        }}
-      />
-      <div
-        className={styles.face}
-        style={{ ...side, transform: `rotateY(90deg) translateZ(${w / 2}px)` }}
-      />
-      <div
-        className={styles.face}
-        style={{ ...side, transform: `rotateY(-90deg) translateZ(${w / 2}px)` }}
-      />
-      <div
-        className={styles.face}
-        style={{
-          ...cap,
-          background: topColor,
-          transform: `rotateX(90deg) translateZ(${h / 2}px)`,
-        }}
-      />
-      <div
-        className={styles.face}
-        style={{
-          ...cap,
-          background: bottomColor,
-          transform: `rotateX(-90deg) translateZ(${h / 2}px)`,
-        }}
-      />
-      {children}
-    </div>
-  );
-}
-
-// Hip joint, thigh, knee, shin and sneaker.
-function Leg({ x, hip, knee }) {
-  return (
-    <Joint x={x} y={120} transform={hip}>
-      <Box x={-7} y={-5} w={14} h={10} d={14} colors={JOINTS} />
-      <Box x={-7.5} y={3} w={15} h={41} d={16} colors={LEGS}>
-        <Joint x={7.5} y={41} transform={knee}>
-          <Box x={-7} y={-4} w={14} h={9} d={16} colors={KNEES} />
-          <Box x={-6.5} y={4} w={13} h={38} d={14} colors={LEGS}>
-            <Joint x={6.5} y={38}>
-              <Box
-                x={-7.5}
-                w={15}
-                h={10}
-                d={26}
-                colors={SHOES}
-                transform="translateZ(5px)"
-              />
-            </Joint>
-          </Box>
-        </Joint>
-      </Box>
-    </Joint>
-  );
-}
-
-// Shoulder joint, upper arm, elbow, forearm with its cuff, and a hand: palm,
-// thumb and fingers curled round the rope.
-function Arm({ x, shoulder, elbow }) {
-  return (
-    <Joint x={x} y={70} transform={shoulder}>
-      <Box x={-7} y={-7} w={14} h={14} d={14} colors={JOINTS} />
-      <Box x={-5} y={4} w={10} h={27} d={10} colors={ARMS}>
-        <Joint x={5} y={27} transform={elbow}>
-          <Box x={-5.5} y={-4} w={11} h={8} d={11} colors={JOINTS} />
-          <Box
-            x={-4.5}
-            y={3}
-            w={9}
-            h={24}
-            d={9}
-            colors={ARMS}
-            front={<div className={styles.cuff} />}
-          >
-            <Joint x={4.5} y={23}>
-              <Box x={-5} w={10} h={9} d={5} colors={HANDS}>
-                <Box
-                  x={3.5}
-                  y={1}
-                  w={3}
-                  h={6}
-                  d={4}
-                  colors={HANDS}
-                  transform="translateZ(4px)"
-                />
-                <Joint x={5} y={8} transform="rotateX(55deg)">
-                  <Box x={-5} w={10} h={8} d={5} colors={HANDS} />
-                </Joint>
-              </Box>
-            </Joint>
-          </Box>
-        </Joint>
-      </Box>
-    </Joint>
-  );
-}
+// How fast each value eases toward its target, per second.
+const RATE = { eyes: 30, headYaw: 6, headPitch: 6, headRoll: 6, sit: 5 };
 
 export function ClimbingRobot() {
   const laneRef = useRef(null);
+  const canvasRef = useRef(null);
   const hitRef = useRef(null);
 
   useEffect(() => {
     const lane = laneRef.current;
+    const canvas = canvasRef.current;
     const hit = hitRef.current;
-    if (!lane || !hit) return;
+    if (!lane || !canvas || !hit) return;
 
     const reduce = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
     const value = { ...REST };
+    let robot = null;
+    let loading = false;
+    let disposed = false;
+    let scale = 1;
     let current = null;
     let vel = 0;
     let sliding = false;
@@ -363,18 +171,35 @@ export function ClimbingRobot() {
     let nextLook = 0;
     let kick = null;
     let nextKick = 0;
+    let blinkUntil = 0;
+    let nextBlink = 0;
 
     // Slides from START_TOP at the top of the page to END_GAP above the
-    // bottom, in step with the scroll; at the very bottom, down to the seat.
+    // bottom, in step with the scroll; at the very bottom, down to the floor.
     function target() {
       const page = document.scrollingElement ?? document.documentElement;
       const maxScroll = page.scrollHeight - window.innerHeight;
       if (maxScroll > 1 && page.scrollTop >= maxScroll - 2) {
-        return { y: page.scrollHeight - SEAT - PELVIS, atBottom: true };
+        const y = page.scrollHeight - FLOOR - PELVIS * scale;
+        return { y, atBottom: true };
       }
       const progress = clamp(page.scrollTop / Math.max(1, maxScroll), 0, 1);
       const travel = Math.max(0, page.scrollHeight - START_TOP - END_GAP);
       return { y: START_TOP + progress * travel, atBottom: false };
+    }
+
+    // Three.js only loads once the robot is actually shown (wide screens).
+    function load() {
+      loading = true;
+      import("./robot-model")
+        .then(({ createRobot }) => {
+          if (disposed) return;
+          robot = createRobot(canvas);
+          schedule();
+        })
+        .catch(() => {
+          // No WebGL: the robot simply stays hidden.
+        });
     }
 
     function step(ms) {
@@ -384,6 +209,13 @@ export function ClimbingRobot() {
         current = null;
         return;
       }
+      if (!robot) {
+        if (!loading) load();
+        return;
+      }
+      scale =
+        parseFloat(getComputedStyle(lane).getPropertyValue("--robot-scale")) ||
+        1;
       const time = ms / 1000;
       const dt = last === null ? 1 / 60 : clamp(time - last, 0.001, 0.05);
       last = time;
@@ -393,6 +225,7 @@ export function ClimbingRobot() {
         current = goal.y;
         nextLook = time + 2 + Math.random() * 3;
         nextKick = time + 4 + Math.random() * 3;
+        nextBlink = time + 1.5 + Math.random() * 2;
       }
       const gap = goal.y - current;
       if (!sliding && gap > SLIDE_GAP) sliding = true;
@@ -437,43 +270,50 @@ export function ClimbingRobot() {
           kick = null;
           nextKick = time + 4 + Math.random() * 4;
         }
+        if (time >= nextBlink) {
+          blinkUntil = time + 0.14;
+          nextBlink = time + 2.5 + Math.random() * 3;
+        }
       }
 
       const goalPose = poseFor({
         mode,
         phase,
         vel,
-        time,
         waving,
         look: look === null ? null : time - look,
         kick: kick === null ? null : (time - kick) / 1.8,
-        reduce,
+        blink: time < blinkUntil,
       });
       let pending = 0;
       for (const [key, to] of Object.entries(goalPose)) {
-        const rate = key.startsWith("head") || key === "eyesX" ? 6 : 14;
+        const rate = RATE[key] ?? 12;
         value[key] = reduce
           ? to
           : value[key] + (to - value[key]) * (1 - Math.exp(-rate * dt));
         pending = Math.max(pending, Math.abs(to - value[key]));
       }
-      for (const [name, css] of Object.entries(cssVars(current, value))) {
-        lane.style.setProperty(name, css);
-      }
+      lane.style.setProperty("--robot-top", `${current.toFixed(1)}px`);
       lane.dataset.mode = mode;
-      lane.dataset.happy = String(waving);
+      lane.dataset.ready = "true";
+      robot.update(value, reduce ? 0 : time, current);
 
       if (
         moving ||
-        pending > 0.05 ||
+        pending > 0.02 ||
         (waving && !reduce) ||
         look !== null ||
-        kick !== null
+        kick !== null ||
+        time < blinkUntil
       ) {
         schedule();
-      } else if (calm && !reduce) {
-        // Asleep until the next look around or leg swing.
-        const next = Math.min(mode === "idle" ? nextLook : nextKick, nextKick);
+      } else if (!reduce) {
+        // Asleep until the next blink, look around or leg swing.
+        const next = Math.min(
+          nextBlink,
+          calm ? nextKick : Infinity,
+          mode === "idle" ? nextLook : Infinity,
+        );
         timer = setTimeout(schedule, Math.max(0, next - time) * 1000);
       }
     }
@@ -511,6 +351,7 @@ export function ClimbingRobot() {
     schedule();
 
     return () => {
+      disposed = true;
       window.removeEventListener("scroll", schedule, { capture: true });
       window.removeEventListener("resize", schedule);
       heightWatcher.disconnect();
@@ -519,12 +360,17 @@ export function ClimbingRobot() {
       hit.removeEventListener("click", onClick);
       cancelAnimationFrame(frame);
       clearTimeout(timer);
+      robot?.dispose();
     };
   }, []);
 
   return (
     <div className={styles.layer} aria-hidden="true">
-      <div ref={laneRef} className={styles.lane} style={IDLE}>
+      <div
+        ref={laneRef}
+        className={styles.lane}
+        style={{ "--robot-top": `${START_TOP}px` }}
+      >
         <div className={styles.bracket}>
           <span className={styles.screw} />
           <span className={styles.screw} />
@@ -540,123 +386,9 @@ export function ClimbingRobot() {
             <span />
             <span />
           </div>
-          <div className={styles.sway}>
-            <div className={styles.swing}>
-              <div className={`${styles.part} ${styles.rig}`}>
-                <span className={`${styles.spark} ${styles.sparkA}`} />
-                <span className={`${styles.spark} ${styles.sparkB}`} />
-
-                <Leg
-                  x={-10}
-                  hip="var(--robot-leg-l)"
-                  knee="var(--robot-knee-l)"
-                />
-                <Leg
-                  x={10}
-                  hip="var(--robot-leg-r)"
-                  knee="var(--robot-knee-r)"
-                />
-
-                {/* Trousers, then the hoodie's hem and pocket */}
-                <Box
-                  x={-19}
-                  y={107}
-                  w={38}
-                  h={16}
-                  d={21}
-                  colors={LEGS}
-                  front={<div className={styles.waistband} />}
-                />
-                <Box
-                  x={-20}
-                  y={93}
-                  w={40}
-                  h={15}
-                  d={22}
-                  colors={BODY}
-                  front={
-                    <>
-                      <div
-                        className={styles.brief}
-                        style={{ left: 7, top: 1, width: 24, height: 6 }}
-                      />
-                      <div className={styles.belt} />
-                    </>
-                  }
-                />
-                {/* Chest, wider at the shoulders */}
-                <Box
-                  x={-25}
-                  y={64}
-                  w={50}
-                  h={30}
-                  d={26}
-                  colors={BODY}
-                  front={
-                    <>
-                      <div className={styles.collar} />
-                      <div
-                        className={styles.stripe}
-                        style={{ left: 19, height: 11 }}
-                      />
-                      <div
-                        className={styles.stripe}
-                        style={{ left: 29, height: 13 }}
-                      />
-                      <svg
-                        className={styles.badge}
-                        style={{ left: 19, top: 17 }}
-                        width="12"
-                        height="10"
-                        viewBox="0 0 12 10"
-                      >
-                        <path
-                          d="M1 9L6 1l5 8M3.5 9L6 5l2.5 4"
-                          fill="none"
-                          stroke="#E8638D"
-                          strokeWidth="1.2"
-                        />
-                      </svg>
-                    </>
-                  }
-                />
-                <Box x={-5} y={56} w={10} h={10} d={10} colors={NECK} />
-                {/* Head, with a visor for a face. It turns at the neck. */}
-                <Joint y={58} transform="var(--robot-head)">
-                  <div className={styles.antenna} />
-                  <div className={styles.antennaTip} />
-                  <Box
-                    x={-18}
-                    y={-32}
-                    w={36}
-                    h={32}
-                    d={32}
-                    colors={HEAD}
-                    frontStyle={{ padding: "7px 5px" }}
-                    front={
-                      <div className={styles.visor}>
-                        <div className={styles.eyes}>
-                          <span className={styles.eye} />
-                          <span className={styles.eye} />
-                        </div>
-                      </div>
-                    }
-                  />
-                </Joint>
-
-                <Arm
-                  x={-30}
-                  shoulder="var(--robot-arm-l)"
-                  elbow="var(--robot-elbow-l)"
-                />
-                <Arm
-                  x={30}
-                  shoulder="var(--robot-arm-r)"
-                  elbow="var(--robot-elbow-r)"
-                />
-              </div>
-            </div>
-          </div>
+          <canvas ref={canvasRef} className={styles.canvas} />
+          <span className={`${styles.spark} ${styles.sparkA}`} />
+          <span className={`${styles.spark} ${styles.sparkB}`} />
           {/* Hovering here makes the robot wave. */}
           <div ref={hitRef} className={styles.hit} />
         </div>

@@ -366,7 +366,8 @@ app/
   api/audit/[id]/route.js    GET: status and report
 components/
   report/                    report sections and charts
-  audit-form.jsx, audit-view.jsx, climbing-robot.jsx, logo.jsx, site-header.jsx
+  climbing-robot.jsx         the mascot on the rope; robot-model.js draws it (Three.js)
+  audit-form.jsx, audit-view.jsx, logo.jsx, site-header.jsx
   ui/                        shadcn/ui components
 lib/
   audit.js                   the pipeline: crawl, check, score, write, report
@@ -384,7 +385,8 @@ Dockerfile, docker-compose.yml
 ```
 
 Built with Next.js 15 (App Router, JavaScript), Tailwind CSS 4 with
-shadcn/ui, Prisma 7 on PostgreSQL, zod, cheerio, and the Anthropic SDK.
+shadcn/ui, Prisma 7 on PostgreSQL, zod, cheerio, the Anthropic SDK, and
+Three.js for the mascot.
 
 ## Development
 
