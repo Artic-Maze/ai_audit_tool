@@ -459,7 +459,8 @@ export function ClimbingRobot() {
         robot.update(value, reduce ? 0 : time, current);
         drawn = true;
       }
-      const roam = !reduce && calm && time - lastScroll > 0.8;
+      // The drones set off once the page has been still for 5 seconds.
+      const roam = !reduce && calm && time - lastScroll > 5;
       const flying = flyDrones(time, dt, roam, current - window.scrollY, ropeX);
 
       if (busy || flying) {
