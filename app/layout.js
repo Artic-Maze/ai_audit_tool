@@ -1,6 +1,6 @@
 import { Geist_Mono, Manrope } from "next/font/google";
 import "./globals.css";
-import { ClimbingRobot } from "@/components/climbing-robot";
+import { ClimbingRobot } from "@/components/climbing-robot-client";
 
 const manrope = Manrope({
   variable: "--font-sans",
