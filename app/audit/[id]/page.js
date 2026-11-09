@@ -1,9 +1,10 @@
 import { cache } from "react";
-import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { AuditView } from "@/components/audit-view";
 import { getAudit, toPublic } from "@/lib/jobs/audits";
-import { isUnlocked } from "@/lib/unlock";
+
+// An audit changes while it runs, so render the page on every request.
+export const dynamic = "force-dynamic";
 
 // One database read per request, shared by the metadata and the page.
 const loadAudit = cache(getAudit);
@@ -17,10 +18,9 @@ export default async function AuditPage({ params }) {
   const { id } = await params;
   const audit = await loadAudit(id);
   if (!audit) notFound();
-  const unlocked = isUnlocked(await cookies(), id);
   return (
     <AuditView
-      initial={toPublic(audit, { unlocked })}
+      initial={toPublic(audit)}
       bookingUrl={process.env.BOOKING_URL || null}
     />
   );

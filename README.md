@@ -50,8 +50,8 @@ can be traced back to a check.
 - **Methodology and limitations**: what the audit could and couldn't see,
   plus the result of every check.
 
-Reports work as a lead magnet. Anyone can see the scores and the top three
-opportunities; the rest unlocks once the viewer enters an email address.
+Anyone with a report's link can see the whole report. There's no sign-up or
+email step.
 
 ## How it works
 
@@ -120,15 +120,14 @@ The page shows each step as it runs, then the report.
 
 All settings are environment variables, read from `.env` in development.
 
-| Variable            | Required      | What it does                                                                                              |
-| ------------------- | ------------- | --------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`      | Yes           | Postgres connection string. `npm run db:migrate` creates the database if it doesn't exist.                |
-| `ANTHROPIC_API_KEY` | Recommended   | Claude API key for the opportunity write-ups, copy rewrites and summary.                                  |
-| `ANTHROPIC_MODEL`   | No            | Overrides the model. Defaults to `claude-sonnet-5-5`.                                                     |
-| `PAGESPEED_API_KEY` | Recommended   | Google PageSpeed Insights API key. Keyless requests share a small quota.                                  |
-| `APP_URL`           | Recommended   | Your deployment's public URL. Added to the crawler's User-Agent so store owners can see who is visiting.  |
-| `UNLOCK_SECRET`     | In production | Signs the cookie that unlocks a full report. Any long random string, e.g. from `openssl rand -base64 32`. |
-| `BOOKING_URL`       | No            | Link for the "Book a call" section at the end of each report. The section is hidden when this isn't set.  |
+| Variable            | Required    | What it does                                                                                             |
+| ------------------- | ----------- | -------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`      | Yes         | Postgres connection string. `npm run db:migrate` creates the database if it doesn't exist.               |
+| `ANTHROPIC_API_KEY` | Recommended | Claude API key for the opportunity write-ups, copy rewrites and summary.                                 |
+| `ANTHROPIC_MODEL`   | No          | Overrides the model. Defaults to `claude-sonnet-5-5`.                                                    |
+| `PAGESPEED_API_KEY` | Recommended | Google PageSpeed Insights API key. Keyless requests share a small quota.                                 |
+| `APP_URL`           | Recommended | Your deployment's public URL. Added to the crawler's User-Agent so store owners can see who is visiting. |
+| `BOOKING_URL`       | No          | Link for the "Book a call" section at the end of each report. The section is hidden when this isn't set. |
 
 ## Command-line tools
 
@@ -299,24 +298,8 @@ Status and progress, plus the report once `status` is `done`.
 `failed`. On failure, `message` explains why in plain words, for example
 "example.com doesn't look like a Shopify store."
 
-Until the viewer unlocks the report, `report` holds only the store details,
-scores, top three opportunities and limitations, plus a `locked` object
-counting what unlocking adds. The rest isn't sent at all.
-
-### `POST /api/lead`
-
-Records an email for an audit and unlocks the full report in that browser,
-using a signed, HTTP-only cookie.
-
-```bash
-curl -X POST http://localhost:3000/api/lead \
-  -H 'content-type: application/json' \
-  -d '{"auditId": "…", "email": "owner@yourstore.com"}'
-```
-
-It returns the same shape as `GET /api/audit/:id`, with the full report. It
-answers 400 for an invalid email, and 404 if the audit doesn't exist or isn't
-finished.
+Once the audit is done, `report` holds the whole report, minus internal
+metadata such as Claude token usage.
 
 ## The crawler
 
@@ -362,16 +345,16 @@ keep the request volume as it is.
 ## Data and privacy
 
 - **Database.** Each audit row stores the crawl snapshot (product data from
-  the public storefront) and the finished report. Each lead row stores an
-  email address and the audit it unlocked.
+  the public storefront) and the finished report. The `Lead` table holds
+  email addresses collected by earlier versions, which asked for one to
+  unlock the full report. Nothing writes to it anymore.
 - **No store access.** GrowthLens never asks for logins or admin access and
   sees no sales data.
 - **Third parties.** Store facts, including product titles and descriptions,
   are sent to Anthropic's API to write the report. Page URLs are sent to
   Google's PageSpeed Insights API. If you run GrowthLens for other people,
   tell them this in your privacy policy.
-- **Cookie.** Unlocking a report sets one HTTP-only cookie per audit,
-  `gl_unlock_<audit id>`, signed with `UNLOCK_SECRET`.
+- **No cookies.** GrowthLens doesn't set any.
 
 ## Project structure
 
@@ -381,10 +364,9 @@ app/
   audit/[id]/page.js         progress, then the report
   api/audit/route.js         POST: start or reuse an audit
   api/audit/[id]/route.js    GET: status and report
-  api/lead/route.js          POST: email capture and unlock
 components/
-  report/                    report sections, charts, unlock form
-  audit-form.jsx, audit-view.jsx, logo.jsx, site-header.jsx
+  report/                    report sections and charts
+  audit-form.jsx, audit-view.jsx, climbing-robot.jsx, logo.jsx, site-header.jsx
   ui/                        shadcn/ui components
 lib/
   audit.js                   the pipeline: crawl, check, score, write, report
@@ -392,9 +374,9 @@ lib/
   checks/                    one file per area
   scoring/                   weights, scores, fixes, roadmap
   llm/                       Claude client, prompts, facts, validation
-  report/                    AuditReport schema, builder, gated view
+  report/                    AuditReport schema, builder, public view
   jobs/                      background runner, audit lifecycle
-  db.js, unlock.js, url.js
+  db.js, url.js
 prisma/                      schema and migrations
 scripts/                     crawl, audit:dry and audit CLIs
 tests/                       Vitest suites and synthetic fixture stores
@@ -448,9 +430,8 @@ long-running Node server rather than serverless functions. It also assumes
 one instance: when the server restarts, audits that were in progress are
 marked as interrupted.
 
-Set `DATABASE_URL`, `UNLOCK_SECRET`, `APP_URL`, `ANTHROPIC_API_KEY` and
-`PAGESPEED_API_KEY` in production. The app won't unlock reports without
-`UNLOCK_SECRET`.
+Set `DATABASE_URL`, `APP_URL`, `ANTHROPIC_API_KEY` and `PAGESPEED_API_KEY`
+in production.
 
 ### Docker Compose behind Traefik
 

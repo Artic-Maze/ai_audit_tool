@@ -21,6 +21,9 @@ model Audit {
   @@index([domain, createdAt])
 }
 
+// Emails from the old email gate, which asked for one to unlock the full
+// report. Nothing writes here anymore; the table is kept so collected
+// emails aren't lost. Export them before dropping it in a migration.
 model Lead {
   id        String   @id @default(cuid())
   email     String

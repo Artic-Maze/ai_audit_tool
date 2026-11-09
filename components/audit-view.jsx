@@ -144,7 +144,7 @@ export function AuditView({ initial, bookingUrl }) {
         )}
       >
         {audit.status === "done" ? (
-          <Report audit={audit} bookingUrl={bookingUrl} onUnlocked={setAudit} />
+          <Report report={audit.report} bookingUrl={bookingUrl} />
         ) : audit.status === "failed" ? (
           <Failed audit={audit} />
         ) : (

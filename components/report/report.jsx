@@ -3,14 +3,12 @@ import { AreaScores } from "./area-scores";
 import { BookCall } from "./book-call";
 import { CopyExamples } from "./copy-examples";
 import { ImpactEffortMatrix } from "./impact-effort-matrix";
-import { LockedPreview } from "./locked-preview";
 import { Methodology } from "./methodology";
 import { OpportunityList } from "./opportunities";
 import { Performance } from "./performance";
 import { Eyebrow, formatDate, Section } from "./primitives";
 import { Roadmap } from "./roadmap";
 import { ScoreDial } from "./score-dial";
-import { UnlockPanel } from "./unlock-panel";
 
 function ReportHeader({ report }) {
   const { store, scores, generatedAt } = report;
@@ -46,73 +44,7 @@ function ReportHeader({ report }) {
   );
 }
 
-const SCORES_DESCRIPTION =
-  "Each area starts at 100 and loses points for every check it fails.";
-
-// Before the email: the free sections, the unlock form, then a preview of
-// each locked section.
-function LockedReport({ audit, bookingUrl, onUnlocked }) {
-  const { report } = audit;
-  const { locked } = report;
-  return (
-    <>
-      <ReportHeader report={report} />
-      <Section
-        id="scores"
-        title="Scores by area"
-        description={SCORES_DESCRIPTION}
-      >
-        <AreaScores areas={report.scores.areas} />
-      </Section>
-      {report.opportunities.length > 0 && (
-        <Section
-          id="opportunities"
-          title="Top opportunities"
-          description="The biggest wins we found, highest impact first."
-        >
-          <OpportunityList opportunities={report.opportunities} />
-        </Section>
-      )}
-      <UnlockPanel auditId={audit.id} locked={locked} onUnlocked={onUnlocked} />
-      <div className="mt-6 grid gap-3 md:grid-cols-2">
-        <LockedPreview
-          title="Executive summary"
-          description="The audit in a few sentences."
-        />
-        {locked.opportunities > 0 && (
-          <LockedPreview
-            title={`${locked.opportunities} more ${locked.opportunities === 1 ? "opportunity" : "opportunities"}`}
-            description="With findings, recommendations and estimated lift."
-          />
-        )}
-        <LockedPreview
-          title="Impact vs. effort"
-          description="Every opportunity on one chart, quick wins first."
-        />
-        {locked.copyExamples > 0 && (
-          <LockedPreview
-            title="Before and after"
-            description="Your thinnest product descriptions, rewritten."
-          />
-        )}
-        <LockedPreview
-          title="90-day roadmap"
-          description="What to do first, next and later."
-        />
-        {locked.performance && (
-          <LockedPreview
-            title="Page speed"
-            description="Mobile and desktop results for your homepage and a product page."
-          />
-        )}
-      </div>
-      <Methodology report={report} />
-      {bookingUrl && <BookCall url={bookingUrl} />}
-    </>
-  );
-}
-
-function FullReport({ report, bookingUrl }) {
+export function Report({ report, bookingUrl }) {
   const { opportunities } = report;
   return (
     <>
@@ -123,7 +55,7 @@ function FullReport({ report, bookingUrl }) {
       <Section
         id="scores"
         title="Scores by area"
-        description={SCORES_DESCRIPTION}
+        description="Each area starts at 100 and loses points for every check it fails."
       >
         <AreaScores areas={report.scores.areas} />
       </Section>
@@ -173,17 +105,5 @@ function FullReport({ report, bookingUrl }) {
       <Methodology report={report} />
       {bookingUrl && <BookCall url={bookingUrl} />}
     </>
-  );
-}
-
-export function Report({ audit, bookingUrl, onUnlocked }) {
-  return audit.report.unlocked ? (
-    <FullReport report={audit.report} bookingUrl={bookingUrl} />
-  ) : (
-    <LockedReport
-      audit={audit}
-      bookingUrl={bookingUrl}
-      onUnlocked={onUnlocked}
-    />
   );
 }
