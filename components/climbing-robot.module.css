@@ -1,0 +1,302 @@
+/* The rope hangs in the right margin: 58px outside the page's 64rem content
+   column, and never closer than 36px to the window edge. */
+.lane {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: max(36px, calc((100% - 64rem) / 2 - 58px));
+  width: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Not enough margin for it on smaller screens. */
+@media (max-width: 1180px) {
+  .lane {
+    display: none;
+  }
+}
+
+/* Rope */
+
+.bracket {
+  position: absolute;
+  left: -18px;
+  top: 0;
+  width: 36px;
+  height: 10px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #3a3330;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  background: #2a2522;
+}
+
+.screw {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #6e615c;
+}
+
+.ring {
+  position: absolute;
+  left: -9px;
+  top: 9px;
+  width: 18px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 3px solid #e0517f;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgb(224 81 127 / 0.35);
+}
+
+.rope {
+  position: absolute;
+  left: -3.5px;
+  top: 20px;
+  bottom: 26px;
+  width: 7px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(155deg, #9a806c 0 3px, #5e4c40 3px 6px);
+  box-shadow:
+    inset -2px 0 2px rgb(0 0 0 / 0.45),
+    4px 0 10px rgb(0 0 0 / 0.6);
+}
+
+.knot {
+  position: absolute;
+  left: -7px;
+  bottom: 14px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #6e5a4c;
+  box-shadow: inset -2px -2px 3px rgb(0 0 0 / 0.5);
+}
+
+.fray {
+  position: absolute;
+  left: -4px;
+  bottom: 0;
+  width: 8px;
+  height: 16px;
+  background: repeating-linear-gradient(
+    90deg,
+    #7a6656 0 1px,
+    transparent 1px 2px
+  );
+}
+
+/* Robot. The --robot-* properties are set on .lane by the component. */
+
+.hanger {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  perspective: 900px;
+  transform: translateY(var(--robot-top));
+}
+
+/* A gentle sway from the hands, always on. */
+.sway {
+  transform-style: preserve-3d;
+  transform-origin: 0 0;
+  animation: sway 3.6s ease-in-out infinite;
+}
+
+/* Swings out with the scroll speed. */
+.swing {
+  transform-style: preserve-3d;
+  transform-origin: 0 0;
+  transform: var(--robot-swing);
+}
+
+.part {
+  position: absolute;
+  transform-style: preserve-3d;
+}
+
+.rig {
+  left: 0;
+  top: 0;
+  transform: var(--robot-rig);
+}
+
+.face {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  border: 1px solid rgb(255 255 255 / 0.07);
+}
+
+/* Sparks from the hands while sliding down. */
+.spark {
+  position: absolute;
+  display: var(--robot-sparks, none);
+  border-radius: 50%;
+  background: #ffb3cb;
+  box-shadow: 0 0 10px 3px #e0517f;
+}
+
+.sparkA {
+  left: -12px;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  animation: spark 0.18s linear infinite;
+}
+
+.sparkB {
+  left: 7px;
+  top: 6px;
+  width: 5px;
+  height: 5px;
+  animation: spark 0.22s linear infinite;
+}
+
+.antenna {
+  position: absolute;
+  left: -1.5px;
+  top: 14px;
+  width: 3px;
+  height: 14px;
+  background: #3a3330;
+}
+
+.antennaTip {
+  position: absolute;
+  left: -4px;
+  top: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e8638d;
+  box-shadow: 0 0 10px #e0517f;
+}
+
+.visor {
+  box-sizing: content-box;
+  width: 100%;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #3a2a2c;
+  border-radius: 5px;
+  background: #060503;
+}
+
+/* Squints while sliding down. */
+.eye {
+  width: 6px;
+  height: var(--robot-eye-h, 8px);
+  border-radius: 3px;
+  background: #f27aa0;
+  box-shadow: 0 0 6px #e0517f;
+  animation: blink 4s infinite;
+}
+
+.collar {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 18px;
+  height: 8px;
+  margin-left: -9px;
+  border-radius: 0 0 9px 9px;
+  background: #262321;
+}
+
+.stripe {
+  position: absolute;
+  top: 7px;
+  width: 2px;
+  background: #e0517f;
+}
+
+.badge {
+  position: absolute;
+  left: 21px;
+  top: 24px;
+}
+
+.brief {
+  box-sizing: content-box;
+  position: absolute;
+  left: 9px;
+  top: 3px;
+  width: 26px;
+  height: 13px;
+  border: 1px solid #2a2725;
+  border-radius: 3px 3px 6px 6px;
+}
+
+.belt {
+  box-sizing: content-box;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 5px;
+  border-top: 1px solid #4a4542;
+  background: #2e2b29;
+}
+
+.cuff {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 4px;
+  background: #e0517f;
+}
+
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotateZ(-2.5deg);
+  }
+  50% {
+    transform: rotateZ(2.5deg);
+  }
+}
+
+@keyframes spark {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.6);
+  }
+}
+
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sway,
+  .spark,
+  .eye {
+    animation: none;
+  }
+}

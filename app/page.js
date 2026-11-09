@@ -1,5 +1,6 @@
 import { FileText, Mail, MessageCircle, Search, Sparkles } from "lucide-react";
 import { AuditForm } from "@/components/audit-form";
+import { ClimbingRobot } from "@/components/climbing-robot";
 import { SiteHeader } from "@/components/site-header";
 
 const AREAS = [
@@ -47,7 +48,10 @@ const DELIVERABLES = [
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col">
+    // overflow-x-clip: the robot can swing past the window edge on narrower
+    // desktops, and that mustn't add a horizontal scrollbar.
+    <div className="relative flex min-h-screen flex-col overflow-x-clip">
+      <ClimbingRobot />
       <SiteHeader />
 
       <main className="flex-1">
