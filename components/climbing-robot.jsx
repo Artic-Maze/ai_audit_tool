@@ -29,6 +29,8 @@ const NECK = ["#3A3532", "#2A2623", "#24201E", "#4A4542", "#151210"];
 const HEAD = ["#2A2623", "#1B1816", "#1D1A18", "#3A3532", "#100E0C"];
 const ARMS = ["#383432", "#2C2927", "#2A2725", "#44403D", "#1E1C1A"];
 const HANDS = ["#C98E6B", "#A8724F", "#B37C59", "#D49B78", "#9A6847"];
+const JOINTS = ["#26221F", "#1C1917", "#1F1C1A", "#34302D", "#141210"];
+const KNEES = ["#3A4868", "#2F3D5A", "#2A3550", "#46557A", "#1E2638"];
 
 const deg = (value) => `${Math.round(value * 100) / 100}deg`;
 
@@ -173,20 +175,24 @@ function Box({
   );
 }
 
+// Hip joint, thigh, knee, shin and sneaker. The knee and ankle sit where they
+// always did relative to the hip, so the climbing poses still fit.
 function Leg({ x, hip, knee }) {
   return (
-    <Joint x={x} y={123} transform={hip}>
-      <Box x={-8.5} w={17} h={34} d={18} colors={LEGS}>
-        <Joint x={8.5} y={33} transform={knee}>
-          <Box x={-7.5} w={15} h={32} d={16} colors={LEGS}>
-            <Joint x={7.5} y={31}>
+    <Joint x={x} y={120} transform={hip}>
+      <Box x={-7} y={-5} w={14} h={10} d={14} colors={JOINTS} />
+      <Box x={-7.5} y={3} w={15} h={41} d={16} colors={LEGS}>
+        <Joint x={7.5} y={41} transform={knee}>
+          <Box x={-7} y={-4} w={14} h={9} d={16} colors={KNEES} />
+          <Box x={-6.5} y={4} w={13} h={38} d={14} colors={LEGS}>
+            <Joint x={6.5} y={38}>
               <Box
-                x={-9}
-                w={18}
-                h={11}
+                x={-7.5}
+                w={15}
+                h={10}
                 d={26}
                 colors={SHOES}
-                transform="translateZ(4px)"
+                transform="translateZ(5px)"
               />
             </Joint>
           </Box>
@@ -196,21 +202,40 @@ function Leg({ x, hip, knee }) {
   );
 }
 
+// Shoulder joint, upper arm, elbow, forearm with its cuff, and a hand: palm,
+// thumb and fingers curled round the rope. The elbow and wrist sit where
+// they always did, so the hands still meet on the rope above the head.
 function Arm({ x, shoulder, elbow }) {
   return (
     <Joint x={x} y={70} transform={shoulder}>
-      <Box x={-6.5} w={13} h={32} d={13} colors={ARMS}>
-        <Joint x={6.5} y={31} transform={elbow}>
+      <Box x={-7} y={-7} w={14} h={14} d={14} colors={JOINTS} />
+      <Box x={-5} y={4} w={10} h={27} d={10} colors={ARMS}>
+        <Joint x={5} y={27} transform={elbow}>
+          <Box x={-5.5} y={-4} w={11} h={8} d={11} colors={JOINTS} />
           <Box
-            x={-6}
-            w={12}
-            h={28}
-            d={12}
+            x={-4.5}
+            y={3}
+            w={9}
+            h={24}
+            d={9}
             colors={ARMS}
             front={<div className={styles.cuff} />}
           >
-            <Joint x={6} y={26}>
-              <Box x={-5.5} w={11} h={15} d={9} colors={HANDS} />
+            <Joint x={4.5} y={23}>
+              <Box x={-5} w={10} h={9} d={5} colors={HANDS}>
+                <Box
+                  x={3.5}
+                  y={1}
+                  w={3}
+                  h={6}
+                  d={4}
+                  colors={HANDS}
+                  transform="translateZ(4px)"
+                />
+                <Joint x={5} y={8} transform="rotateX(55deg)">
+                  <Box x={-5} w={10} h={8} d={5} colors={HANDS} />
+                </Joint>
+              </Box>
             </Joint>
           </Box>
         </Joint>
@@ -322,37 +347,49 @@ export function ClimbingRobot() {
                 <div className={styles.antennaTip} />
 
                 <Leg
-                  x={-11}
+                  x={-10}
                   hip="var(--robot-leg-l)"
                   knee="var(--robot-knee-l)"
                 />
                 <Leg
-                  x={11}
+                  x={10}
                   hip="var(--robot-leg-r)"
                   knee="var(--robot-knee-r)"
                 />
 
-                {/* Hips */}
+                {/* Trousers, then the hoodie's hem and pocket */}
                 <Box
-                  x={-22}
-                  y={99}
-                  w={44}
-                  h={28}
+                  x={-19}
+                  y={107}
+                  w={38}
+                  h={16}
+                  d={21}
+                  colors={LEGS}
+                  front={<div className={styles.waistband} />}
+                />
+                <Box
+                  x={-20}
+                  y={93}
+                  w={40}
+                  h={15}
                   d={22}
                   colors={BODY}
                   front={
                     <>
-                      <div className={styles.brief} />
+                      <div
+                        className={styles.brief}
+                        style={{ left: 7, top: 1, width: 24, height: 6 }}
+                      />
                       <div className={styles.belt} />
                     </>
                   }
                 />
-                {/* Chest */}
+                {/* Chest, wider at the shoulders */}
                 <Box
-                  x={-27}
+                  x={-25}
                   y={64}
-                  w={54}
-                  h={36}
+                  w={50}
+                  h={30}
                   d={26}
                   colors={BODY}
                   front={
@@ -360,14 +397,15 @@ export function ClimbingRobot() {
                       <div className={styles.collar} />
                       <div
                         className={styles.stripe}
-                        style={{ left: 21, height: 14 }}
+                        style={{ left: 19, height: 11 }}
                       />
                       <div
                         className={styles.stripe}
-                        style={{ left: 31, height: 16 }}
+                        style={{ left: 29, height: 13 }}
                       />
                       <svg
                         className={styles.badge}
+                        style={{ left: 19, top: 17 }}
                         width="12"
                         height="10"
                         viewBox="0 0 12 10"
@@ -382,7 +420,7 @@ export function ClimbingRobot() {
                     </>
                   }
                 />
-                <Box x={-6} y={56} w={12} h={9} d={12} colors={NECK} />
+                <Box x={-5} y={56} w={10} h={10} d={10} colors={NECK} />
                 {/* Head, with a visor for a face */}
                 <Box
                   x={-18}

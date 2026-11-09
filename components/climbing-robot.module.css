@@ -260,6 +260,27 @@
   background: #2e2b29;
 }
 
+.waistband {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 3px;
+  background: #1a2133;
+}
+
+/* Belt buckle */
+.waistband::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 6px;
+  height: 3px;
+  margin-left: -3px;
+  background: #e0517f;
+}
+
 .cuff {
   position: absolute;
   left: 0;
