@@ -97,7 +97,7 @@ function Failed({ audit }) {
   );
 }
 
-export function AuditView({ initial, bookingUrl }) {
+export function AuditView({ initial }) {
   const [audit, setAudit] = useState(initial);
   const [connectionLost, setConnectionLost] = useState(false);
   const finished = isFinished(audit.status);
@@ -144,7 +144,7 @@ export function AuditView({ initial, bookingUrl }) {
         )}
       >
         {audit.status === "done" ? (
-          <Report report={audit.report} bookingUrl={bookingUrl} />
+          <Report report={audit.report} />
         ) : audit.status === "failed" ? (
           <Failed audit={audit} />
         ) : (

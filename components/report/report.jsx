@@ -1,6 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
 import { AreaScores } from "./area-scores";
-import { BookCall } from "./book-call";
 import { CopyExamples } from "./copy-examples";
 import { ImpactEffortMatrix } from "./impact-effort-matrix";
 import { Methodology } from "./methodology";
@@ -44,7 +43,7 @@ function ReportHeader({ report }) {
   );
 }
 
-export function Report({ report, bookingUrl }) {
+export function Report({ report }) {
   const { opportunities } = report;
   return (
     <>
@@ -103,7 +102,6 @@ export function Report({ report, bookingUrl }) {
         <Performance performance={report.performance} />
       </Section>
       <Methodology report={report} />
-      {bookingUrl && <BookCall url={bookingUrl} />}
     </>
   );
 }

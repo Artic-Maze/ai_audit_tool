@@ -127,7 +127,6 @@ All settings are environment variables, read from `.env` in development.
 | `ANTHROPIC_MODEL`   | No          | Overrides the model. Defaults to `claude-sonnet-5-5`.                                                    |
 | `PAGESPEED_API_KEY` | Recommended | Google PageSpeed Insights API key. Keyless requests share a small quota.                                 |
 | `APP_URL`           | Recommended | Your deployment's public URL. Added to the crawler's User-Agent so store owners can see who is visiting. |
-| `BOOKING_URL`       | No          | Link for the "Book a call" section at the end of each report. The section is hidden when this isn't set. |
 
 ## Command-line tools
 

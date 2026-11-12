@@ -18,10 +18,5 @@ export default async function AuditPage({ params }) {
   const { id } = await params;
   const audit = await loadAudit(id);
   if (!audit) notFound();
-  return (
-    <AuditView
-      initial={toPublic(audit)}
-      bookingUrl={process.env.BOOKING_URL || null}
-    />
-  );
+  return <AuditView initial={toPublic(audit)} />;
 }
