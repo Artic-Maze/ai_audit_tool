@@ -44,9 +44,29 @@ describe("copy.thin-descriptions", () => {
     ]);
     expect(checkById(snapshot, id).evidence).toEqual([
       "1 of 4 products has a description under 50 words (25%).",
-      "1 product has no description at all.",
+      "That product has no description at all.",
       'Shortest: "Short One" (0 words).',
     ]);
+  });
+
+  it("says the empty descriptions are part of the short ones", () => {
+    const mixed = withProducts([
+      product("a", { descriptionWordCount: 0 }),
+      product("b", { descriptionWordCount: 0 }),
+      product("c", { descriptionWordCount: 12 }),
+      ...products(2),
+    ]);
+    const allEmpty = withProducts([
+      product("a", { descriptionWordCount: 0 }),
+      product("b", { descriptionWordCount: 0 }),
+      ...products(2),
+    ]);
+    expect(checkById(mixed, id).evidence[1]).toBe(
+      "Of those 3, 2 have no description at all and 1 has a short one.",
+    );
+    expect(checkById(allEmpty, id).evidence[1]).toBe(
+      "All 2 of them have no description at all.",
+    );
   });
 
   it("leaves gift cards out and says so", () => {
